@@ -1,0 +1,7 @@
+{
+  "name": "NLMKblablaCAR",
+  "description": "Корпоративное приложение для поиска попутчиков между Москвой и Липецком для сотрудников НЛМК.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

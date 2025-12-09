@@ -1,0 +1,65 @@
+export enum City {
+  Moscow = 'Moscow',
+  Lipetsk = 'Lipetsk'
+}
+
+export enum Role {
+  Driver = 'Driver',
+  Passenger = 'Passenger',
+  Both = 'Both'
+}
+
+export enum MusicPref {
+  Quiet = 'Quiet',
+  Normal = 'Normal',
+  Loud = 'Loud'
+}
+
+export enum BaggageSize {
+  Hand = 'Hand',
+  Medium = 'Medium',
+  Suitcase = 'Suitcase'
+}
+
+export enum ConversationPref {
+  Chatty = 'Chatty',
+  Quiet = 'Quiet'
+}
+
+export interface Preferences {
+  music: MusicPref;
+  smoking: boolean; // true = allowed, false = forbidden
+  pets: boolean; // true = allowed
+  baggage: BaggageSize;
+  conversation: ConversationPref;
+  ac: boolean; // true = has AC
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl: string;
+  homeCity: City;
+  role: Role;
+  defaultPreferences: Preferences;
+  rating: number;
+}
+
+export interface Trip {
+  id: string;
+  driverId: string;
+  driver: User;
+  from: City;
+  to: City;
+  date: string; // ISO Date string YYYY-MM-DD
+  time: string; // HH:mm
+  pickupLocation: string;
+  dropoffLocation: string;
+  seatsTotal: number;
+  seatsBooked: number;
+  preferences: Preferences;
+  comment: string;
+  tripGroupId?: string; // Links outbound and return trips
+  isReturn?: boolean;
+}
