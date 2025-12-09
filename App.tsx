@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   HashRouter, Routes, Route, Link, useNavigate, useLocation 
@@ -5,12 +6,13 @@ import {
 import { 
   Car, Sun, Moon, MapPin, Calendar, Clock, User as UserIcon, 
   PlusCircle, Search, LogOut, ArrowRight, CheckCircle, Sparkles, AlertCircle,
-  Edit2, Save, X
+  Edit2, Save, X, Loader2
 } from 'lucide-react';
 import { City, Role, User, Trip, Preferences, MusicPref, BaggageSize, ConversationPref } from './types';
-import { MOCK_USER, MOCK_TRIPS, DEFAULT_PREFERENCES, APP_NAME } from './constants';
+import { DEFAULT_PREFERENCES, APP_NAME } from './constants';
 import { PreferenceRow } from './components/Icons';
 import { generateAssistantResponse } from './services/geminiService';
+import { api } from './services/api';
 
 // --- Shared Helpers ---
 
@@ -18,7 +20,7 @@ const getCityName = (city: City) => city === City.Moscow ? 'Москва' : 'Л�
 
 // --- Shared Components ---
 
-const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }: any) => {
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, loading = false }: any) => {
   const baseStyle = "px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
     primary: "bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-lg shadow-sky-200 hover:shadow-sky-300",
@@ -29,8 +31,8 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
   };
   
   return (
-    <button onClick={onClick} className={`${baseStyle} ${variants[variant as keyof typeof variants]} ${className}`} disabled={disabled}>
-      {children}
+    <button onClick={onClick} className={`${baseStyle} ${variants[variant as keyof typeof variants]} ${className}`} disabled={disabled || loading}>
+      {loading ? <Loader2 size={20} className="animate-spin" /> : children}
     </button>
   );
 };
@@ -110,8 +112,9 @@ const Assistant = () => {
     );
 };
 
-const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void }) => {
+const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Promise<void> }) => {
     const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Form State
     const [outbound, setOutbound] = useState<Partial<Trip>>({
@@ -141,7 +144,7 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
 
     const [hasReturn, setHasReturn] = useState(true);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const groupId = `g-${Date.now()}`;
         
         // Validation check (simplified)
@@ -149,6 +152,9 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
             alert("Пожалуйста, заполните детали первой поездки");
             return;
         }
+
+        setIsSubmitting(true);
+        const tripsToAdd: Trip[] = [];
 
         const trip1: Trip = {
             ...outbound,
@@ -160,7 +166,7 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
             isReturn: false,
         } as Trip;
         
-        addTrip(trip1);
+        tripsToAdd.push(trip1);
 
         if (hasReturn && returnTrip.date) {
             const trip2: Trip = {
@@ -172,9 +178,11 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
                 tripGroupId: groupId,
                 isReturn: true,
             } as Trip;
-            addTrip(trip2);
+            tripsToAdd.push(trip2);
         }
 
+        await addTrip(tripsToAdd);
+        setIsSubmitting(false);
         navigate('/');
     };
 
@@ -192,7 +200,7 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
     };
 
     return (
-        <div className="max-w-2xl mx-auto pb-24">
+        <div className="max-w-2xl mx-auto pb-24 animate-fade-in">
             <h2 className="text-3xl font-light text-slate-800 mb-6 flex items-center gap-2">
                 <Car className="text-sky-400" /> Создать поездку
             </h2>
@@ -279,7 +287,7 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
             )}
 
             <div className="fixed bottom-0 left-0 w-full p-4 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-center z-40">
-                <Button onClick={handleSubmit} className="w-full max-w-md shadow-xl shadow-sky-200/50">
+                <Button onClick={handleSubmit} className="w-full max-w-md shadow-xl shadow-sky-200/50" loading={isSubmitting}>
                     Опубликовать
                 </Button>
             </div>
@@ -287,9 +295,26 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip) => void 
     );
 };
 
-const TripList = ({ trips, joinTrip, user }: { trips: Trip[], joinTrip: (id: string) => void, user: User }) => {
+const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip: (id: string) => Promise<void>, user: User, loading: boolean }) => {
+    const [joiningId, setJoiningId] = useState<string | null>(null);
+
+    const handleJoin = async (id: string) => {
+        setJoiningId(id);
+        await joinTrip(id);
+        setJoiningId(null);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-4">
+                <Loader2 size={40} className="animate-spin text-sky-400" />
+                <p>Загрузка расписания...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="grid gap-6">
+        <div className="grid gap-6 animate-fade-in">
             {trips.length === 0 ? (
                 <div className="text-center py-20 opacity-50">
                     <Car size={64} className="mx-auto mb-4 text-sky-200" />
@@ -299,6 +324,7 @@ const TripList = ({ trips, joinTrip, user }: { trips: Trip[], joinTrip: (id: str
                 trips.map(trip => {
                     const availableSeats = Math.max(0, 2 - trip.seatsBooked); // Limit logic: Max 2 pax
                     const isFull = availableSeats === 0;
+                    const isMyTrip = trip.driverId === user.id;
 
                     return (
                         <Card key={trip.id} className="relative group overflow-hidden">
@@ -348,12 +374,13 @@ const TripList = ({ trips, joinTrip, user }: { trips: Trip[], joinTrip: (id: str
                             <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
                                 <PreferenceRow prefs={trip.preferences} />
                                 <Button 
-                                    onClick={() => joinTrip(trip.id)} 
-                                    disabled={isFull || trip.driverId === user.id}
+                                    onClick={() => handleJoin(trip.id)} 
+                                    disabled={isFull || isMyTrip}
                                     variant={isFull ? 'ghost' : 'primary'}
                                     className="px-4 py-2 text-sm"
+                                    loading={joiningId === trip.id}
                                 >
-                                    {isFull ? 'Занято' : 'Поехать'}
+                                    {isMyTrip ? 'Ваша поездка' : isFull ? 'Занято' : 'Поехать'}
                                 </Button>
                             </div>
                         </Card>
@@ -364,7 +391,7 @@ const TripList = ({ trips, joinTrip, user }: { trips: Trip[], joinTrip: (id: str
     );
 }
 
-const Schedule = ({ trips, joinTrip, user }: { trips: Trip[], joinTrip: (id: string) => void, user: User }) => {
+const Schedule = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip: (id: string) => Promise<void>, user: User, loading: boolean }) => {
     const [filterDir, setFilterDir] = useState<string>('all'); // all, moscow-lipetsk, lipetsk-moscow
     const [filterDateStart, setFilterDateStart] = useState<string>('');
     const [filterDateEnd, setFilterDateEnd] = useState<string>('');
@@ -452,17 +479,20 @@ const Schedule = ({ trips, joinTrip, user }: { trips: Trip[], joinTrip: (id: str
                 </div>
             </div>
 
-            <TripList trips={filteredTrips} joinTrip={joinTrip} user={user} />
+            <TripList trips={filteredTrips} joinTrip={joinTrip} user={user} loading={loading} />
         </div>
     );
 };
 
-const Profile = ({ user, updateUser }: { user: User, updateUser: (u: User) => void }) => {
+const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: User) => Promise<void>, onLogout: () => void }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<User>(user);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = () => {
-        updateUser(editData);
+    const handleSave = async () => {
+        setIsSaving(true);
+        await updateUser(editData);
+        setIsSaving(false);
         setIsEditing(false);
     };
 
@@ -493,7 +523,7 @@ const Profile = ({ user, updateUser }: { user: User, updateUser: (u: User) => vo
     }
 
     return (
-        <div className="pb-20">
+        <div className="pb-20 animate-fade-in">
             <Card className="flex flex-col items-center text-center mb-6 pt-10 pb-10 relative">
                  <div className="absolute top-4 right-4">
                     {isEditing ? (
@@ -501,8 +531,8 @@ const Profile = ({ user, updateUser }: { user: User, updateUser: (u: User) => vo
                             <button onClick={handleCancel} className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100">
                                 <X size={20} />
                             </button>
-                            <button onClick={handleSave} className="p-2 rounded-full bg-green-50 text-green-500 hover:bg-green-100">
-                                <Save size={20} />
+                            <button onClick={handleSave} disabled={isSaving} className="p-2 rounded-full bg-green-50 text-green-500 hover:bg-green-100 flex items-center">
+                                {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
                             </button>
                         </div>
                     ) : (
@@ -594,14 +624,14 @@ const Profile = ({ user, updateUser }: { user: User, updateUser: (u: User) => vo
                  </div>
             </div>
             
-            <button className="w-full mt-8 py-3 text-red-400 hover:text-red-500 text-sm">
+            <button onClick={onLogout} className="w-full mt-8 py-3 text-red-400 hover:text-red-500 text-sm">
                 Выйти
             </button>
         </div>
     );
 };
 
-const Auth = ({ onLogin }: { onLogin: (email: string) => void }) => {
+const Auth = ({ onLogin, loading }: { onLogin: (email: string) => void, loading: boolean }) => {
     const [email, setEmail] = useState('');
     const [step, setStep] = useState(1); // 1: Email, 2: Code
     const [code, setCode] = useState('');
@@ -655,7 +685,7 @@ const Auth = ({ onLogin }: { onLogin: (email: string) => void }) => {
                                 value={code}
                                 onChange={e => setCode(e.target.value)}
                             />
-                            <Button className="w-full">Поехали!</Button>
+                            <Button className="w-full" loading={loading}>Поехали!</Button>
                         </form>
                     )}
                 </Card>
@@ -713,43 +743,75 @@ const Layout = ({ children }: any) => {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [trips, setTrips] = useState<Trip[]>(MOCK_TRIPS);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tripsLoading, setTripsLoading] = useState(false);
 
-  const handleLogin = (email: string) => {
-    // Mock Login
-    setUser({ ...MOCK_USER, email });
+  // Initial load
+  useEffect(() => {
+    // Check if user is logged in (persisted session could be added here, 
+    // but for now we rely on explicit login form for demo purposes)
+  }, []);
+
+  // Fetch trips when user is logged in
+  useEffect(() => {
+      if (user) {
+          loadTrips();
+      }
+  }, [user]);
+
+  const loadTrips = async () => {
+      setTripsLoading(true);
+      const data = await api.getTrips();
+      setTrips(data);
+      setTripsLoading(false);
+  }
+
+  const handleLogin = async (email: string) => {
+    setLoading(true);
+    const u = await api.getUser(email);
+    setUser(u);
+    setLoading(false);
   };
 
-  const addTrip = (newTrip: Trip) => {
-    setTrips(prev => [...prev, newTrip]);
+  const handleLogout = () => {
+      setUser(null);
+  }
+
+  const addTrip = async (newTrips: Trip[]) => {
+    for (const trip of newTrips) {
+        await api.createTrip(trip);
+    }
+    await loadTrips();
   };
 
-  const updateUser = (updatedUser: User) => {
+  const updateUser = async (updatedUser: User) => {
+      await api.updateUser(updatedUser);
       setUser(updatedUser);
   };
 
-  const joinTrip = (tripId: string) => {
-    setTrips(prev => prev.map(t => {
-        if(t.id === tripId && t.seatsBooked < 2) { // Logic: Limit max 2 passengers
-            return { ...t, seatsBooked: t.seatsBooked + 1 };
-        }
-        return t;
-    }));
-    // In a real app, logic here to prompt for return trip matching
-    alert("Вы присоединились к поездке! Детали отправлены на почту.");
+  const joinTrip = async (tripId: string) => {
+    const trip = trips.find(t => t.id === tripId);
+    if (!trip) return;
+
+    // Optimistic update
+    const updatedTrip = { ...trip, seatsBooked: trip.seatsBooked + 1 };
+    await api.updateTrip(updatedTrip);
+    await loadTrips();
+    alert("Вы присоединились к поездке!");
   };
 
   if (!user) {
-    return <Auth onLogin={handleLogin} />;
+    return <Auth onLogin={handleLogin} loading={loading} />;
   }
 
   return (
     <HashRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} user={user} />} />
+          <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} user={user} loading={tripsLoading} />} />
           <Route path="/create" element={<CreateTrip user={user} addTrip={addTrip} />} />
-          <Route path="/profile" element={<Profile user={user} updateUser={updateUser} />} />
+          <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} />} />
         </Routes>
       </Layout>
     </HashRouter>
