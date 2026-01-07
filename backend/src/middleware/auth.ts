@@ -32,10 +32,11 @@ export const authMiddleware = async (
 };
 
 export const generateToken = (userId: string, email: string): string => {
+  const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
   return jwt.sign(
     { userId, email } as JwtPayload,
     JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn }
   );
 };
 
