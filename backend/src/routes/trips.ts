@@ -315,7 +315,8 @@ function formatTripResponse(trip: any) {
     comment: trip.comment,
     tripGroupId: trip.tripGroupId,
     isReturn: trip.isReturn,
-    status: trip.status
+    status: trip.status,
+    passengers: trip.bookings?.map((b: any) => formatUserResponse(b.passenger)) || []
   };
 }
 

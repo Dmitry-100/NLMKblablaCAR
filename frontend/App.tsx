@@ -3,10 +3,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   HashRouter, Routes, Route, Link, useNavigate, useLocation 
 } from 'react-router-dom';
-import { 
-  Car, Sun, Moon, MapPin, Calendar, Clock, User as UserIcon, 
+import {
+  Car, Sun, Moon, MapPin, Calendar, Clock, User as UserIcon,
   PlusCircle, Search, LogOut, ArrowRight, CheckCircle, Sparkles, AlertCircle,
-  Edit2, Save, X, Loader2
+  Edit2, Save, X, Loader2, Trash2, Users
 } from 'lucide-react';
 import { City, Role, User, Trip, Preferences, MusicPref, BaggageSize, ConversationPref } from './types';
 import { DEFAULT_PREFERENCES, APP_NAME } from './constants';
@@ -295,13 +295,28 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
     );
 };
 
-const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip: (id: string) => Promise<void>, user: User, loading: boolean }) => {
+const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
+    trips: Trip[],
+    joinTrip: (id: string) => Promise<void>,
+    deleteTrip: (id: string) => Promise<void>,
+    onEdit: (trip: Trip) => void,
+    user: User,
+    loading: boolean
+}) => {
     const [joiningId, setJoiningId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const handleJoin = async (id: string) => {
         setJoiningId(id);
         await joinTrip(id);
         setJoiningId(null);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('Вы уверены, что хотите отменить эту поездку?')) return;
+        setDeletingId(id);
+        await deleteTrip(id);
+        setDeletingId(null);
     };
 
     if (loading) {
@@ -325,11 +340,12 @@ const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip:
                     const availableSeats = Math.max(0, 2 - trip.seatsBooked); // Limit logic: Max 2 pax
                     const isFull = availableSeats === 0;
                     const isMyTrip = trip.driverId === user.id;
+                    const passengers = trip.passengers || [];
 
                     return (
                         <Card key={trip.id} className="relative group overflow-hidden">
                              {/* Route Line Visualization */}
-                            <div className="absolute top-0 right-0 p-4 opacity-5">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                                 <Car size={100} />
                             </div>
 
@@ -338,16 +354,42 @@ const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip:
                                     <div className="flex items-center gap-2 mb-1">
                                         <Badge color={trip.from === City.Moscow ? 'blue' : 'pink'}>{getCityName(trip.from)} → {getCityName(trip.to)}</Badge>
                                         {trip.isReturn && <Badge color="gray">Обратно</Badge>}
+                                        {isMyTrip && <Badge color="green">Ваша поездка</Badge>}
                                         {/* Highlight urgent trips */}
-                                        { new Date(`${trip.date}T${trip.time}`).getTime() - Date.now() < 7200000 && 
+                                        { new Date(`${trip.date}T${trip.time}`).getTime() - Date.now() < 7200000 &&
                                           new Date(`${trip.date}T${trip.time}`).getTime() > Date.now() &&
                                           <span className="text-xs text-orange-500 font-bold animate-pulse flex items-center gap-1"><Clock size={12}/> Скоро отправление</span>
                                         }
                                     </div>
                                     <h3 className="text-xl font-bold text-gray-800">{trip.time} <span className="text-sm font-normal text-gray-500"> {trip.date}</span></h3>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex items-center gap-2 relative z-10">
                                     <div className="text-2xl font-light text-sky-600">{availableSeats} <span className="text-xs text-gray-400">мест</span></div>
+                                    {isMyTrip && (
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEdit(trip);
+                                                }}
+                                                className="p-2 text-sky-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors z-20"
+                                                title="Редактировать"
+                                            >
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(trip.id);
+                                                }}
+                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-20"
+                                                disabled={deletingId === trip.id}
+                                                title="Удалить"
+                                            >
+                                                {deletingId === trip.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -358,6 +400,24 @@ const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip:
                                     <p className="text-xs text-gray-400">★ {trip.driver.rating.toFixed(1)} Водитель</p>
                                 </div>
                             </div>
+
+                            {/* Passengers section */}
+                            {passengers.length > 0 && (
+                                <div className="mb-4 p-3 bg-green-50/50 rounded-lg border border-green-100">
+                                    <div className="flex items-center gap-2 text-sm text-green-700 mb-2">
+                                        <Users size={14} />
+                                        <span className="font-medium">Пассажиры ({passengers.length})</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {passengers.map(p => (
+                                            <div key={p.id} className="flex items-center gap-2 bg-white px-2 py-1 rounded-full shadow-sm">
+                                                <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full" />
+                                                <span className="text-xs text-gray-700">{p.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex gap-4 text-sm text-gray-600 mb-4 bg-gray-50/50 p-3 rounded-lg">
                                 <div className="flex items-center gap-2">
@@ -370,18 +430,24 @@ const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip:
                                     {trip.dropoffLocation}
                                 </div>
                             </div>
-                            
+
+                            {trip.comment && (
+                                <div className="mb-4 text-sm text-gray-500 italic">"{trip.comment}"</div>
+                            )}
+
                             <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
                                 <PreferenceRow prefs={trip.preferences} />
-                                <Button 
-                                    onClick={() => handleJoin(trip.id)} 
-                                    disabled={isFull || isMyTrip}
-                                    variant={isFull ? 'ghost' : 'primary'}
-                                    className="px-4 py-2 text-sm"
-                                    loading={joiningId === trip.id}
-                                >
-                                    {isMyTrip ? 'Ваша поездка' : isFull ? 'Занято' : 'Поехать'}
-                                </Button>
+                                {!isMyTrip && (
+                                    <Button
+                                        onClick={() => handleJoin(trip.id)}
+                                        disabled={isFull}
+                                        variant={isFull ? 'ghost' : 'primary'}
+                                        className="px-4 py-2 text-sm"
+                                        loading={joiningId === trip.id}
+                                    >
+                                        {isFull ? 'Занято' : 'Поехать'}
+                                    </Button>
+                                )}
                             </div>
                         </Card>
                     );
@@ -391,7 +457,14 @@ const TripList = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip:
     );
 }
 
-const Schedule = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip: (id: string) => Promise<void>, user: User, loading: boolean }) => {
+const Schedule = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
+    trips: Trip[],
+    joinTrip: (id: string) => Promise<void>,
+    deleteTrip: (id: string) => Promise<void>,
+    onEdit: (trip: Trip) => void,
+    user: User,
+    loading: boolean
+}) => {
     const [filterDir, setFilterDir] = useState<string>('all'); // all, moscow-lipetsk, lipetsk-moscow
     const [filterDateStart, setFilterDateStart] = useState<string>('');
     const [filterDateEnd, setFilterDateEnd] = useState<string>('');
@@ -479,7 +552,7 @@ const Schedule = ({ trips, joinTrip, user, loading }: { trips: Trip[], joinTrip:
                 </div>
             </div>
 
-            <TripList trips={filteredTrips} joinTrip={joinTrip} user={user} loading={loading} />
+            <TripList trips={filteredTrips} joinTrip={joinTrip} deleteTrip={deleteTrip} onEdit={onEdit} user={user} loading={loading} />
         </div>
     );
 };
@@ -633,17 +706,12 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
 
 const Auth = ({ onLogin, loading }: { onLogin: (email: string) => void, loading: boolean }) => {
     const [email, setEmail] = useState('');
-    const [step, setStep] = useState(1); // 1: Email, 2: Code
-    const [code, setCode] = useState('');
 
-    const handleEmailSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if(email.includes('@')) setStep(2);
-    };
-
-    const handleCodeSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onLogin(email);
+        if(email.includes('@')) {
+            onLogin(email);
+        }
     };
 
     return (
@@ -660,34 +728,18 @@ const Auth = ({ onLogin, loading }: { onLogin: (email: string) => void, loading:
                 <p className="text-slate-500 mb-8">Поездки между Москвой и Липецком.</p>
 
                 <Card className="text-left">
-                    {step === 1 ? (
-                        <form onSubmit={handleEmailSubmit}>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Корпоративная почта</label>
-                            <input 
-                                type="email" 
-                                required
-                                placeholder="name@nlmk.com" 
-                                className="w-full p-3 bg-gray-50 rounded-xl mb-4 focus:ring-2 focus:ring-sky-200 outline-none"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                            />
-                            <Button className="w-full">Получить код</Button>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleCodeSubmit}>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Введите код доступа</label>
-                            <div className="text-xs text-gray-400 mb-4">Отправлен на {email}</div>
-                            <input 
-                                type="text" 
-                                required
-                                placeholder="1234" 
-                                className="w-full p-3 bg-gray-50 rounded-xl mb-4 text-center tracking-widest text-xl focus:ring-2 focus:ring-sky-200 outline-none"
-                                value={code}
-                                onChange={e => setCode(e.target.value)}
-                            />
-                            <Button className="w-full" loading={loading}>Поехали!</Button>
-                        </form>
-                    )}
+                    <form onSubmit={handleSubmit}>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Корпоративная почта</label>
+                        <input
+                            type="email"
+                            required
+                            placeholder="name@nlmk.com"
+                            className="w-full p-3 bg-gray-50 rounded-xl mb-4 focus:ring-2 focus:ring-sky-200 outline-none"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                        />
+                        <Button className="w-full" loading={loading}>Войти</Button>
+                    </form>
                 </Card>
             </div>
         </div>
@@ -739,6 +791,97 @@ const Layout = ({ children }: any) => {
     );
 };
 
+// --- Edit Trip Modal ---
+
+const EditTripModal = ({ trip, onSave, onClose }: {
+    trip: Trip,
+    onSave: (trip: Trip) => Promise<void>,
+    onClose: () => void
+}) => {
+    const [editData, setEditData] = useState<Trip>(trip);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        await onSave(editData);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-800">Редактировать поездку</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Дата</label>
+                        <input
+                            type="date"
+                            value={editData.date}
+                            onChange={e => setEditData({...editData, date: e.target.value})}
+                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Время</label>
+                        <input
+                            type="time"
+                            value={editData.time}
+                            onChange={e => setEditData({...editData, time: e.target.value})}
+                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Место посадки</label>
+                        <input
+                            type="text"
+                            value={editData.pickupLocation}
+                            onChange={e => setEditData({...editData, pickupLocation: e.target.value})}
+                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Место высадки</label>
+                        <input
+                            type="text"
+                            value={editData.dropoffLocation}
+                            onChange={e => setEditData({...editData, dropoffLocation: e.target.value})}
+                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+                        <textarea
+                            value={editData.comment}
+                            onChange={e => setEditData({...editData, comment: e.target.value})}
+                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none resize-none"
+                            rows={3}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                    <Button variant="secondary" onClick={onClose} className="flex-1">
+                        Отмена
+                    </Button>
+                    <Button onClick={handleSave} loading={isSaving} className="flex-1">
+                        <Save size={18} /> Сохранить
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Main App Logic ---
 
 export default function App() {
@@ -746,10 +889,11 @@ export default function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(false);
   const [tripsLoading, setTripsLoading] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
 
   // Initial load
   useEffect(() => {
-    // Check if user is logged in (persisted session could be added here, 
+    // Check if user is logged in (persisted session could be added here,
     // but for now we rely on explicit login form for demo purposes)
   }, []);
 
@@ -779,10 +923,15 @@ export default function App() {
   }
 
   const addTrip = async (newTrips: Trip[]) => {
-    for (const trip of newTrips) {
+    try {
+      for (const trip of newTrips) {
         await api.createTrip(trip);
+      }
+      await loadTrips();
+    } catch (error) {
+      console.error('Error creating trip:', error);
+      alert('Ошибка создания поездки: ' + (error as Error).message);
     }
-    await loadTrips();
   };
 
   const updateUser = async (updatedUser: User) => {
@@ -791,14 +940,41 @@ export default function App() {
   };
 
   const joinTrip = async (tripId: string) => {
-    const trip = trips.find(t => t.id === tripId);
-    if (!trip) return;
+    try {
+      await api.bookTrip(tripId);
+      await loadTrips();
+      alert("Вы присоединились к поездке!");
+    } catch (error) {
+      console.error('Error joining trip:', error);
+      alert('Ошибка бронирования: ' + (error as Error).message);
+    }
+  };
 
-    // Optimistic update
-    const updatedTrip = { ...trip, seatsBooked: trip.seatsBooked + 1 };
-    await api.updateTrip(updatedTrip);
-    await loadTrips();
-    alert("Вы присоединились к поездке!");
+  const deleteTrip = async (tripId: string) => {
+    try {
+      await api.cancelTrip(tripId);
+      await loadTrips();
+      alert("Поездка отменена");
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      alert('Ошибка отмены: ' + (error as Error).message);
+    }
+  };
+
+  const handleEditTrip = (trip: Trip) => {
+    setEditingTrip(trip);
+  };
+
+  const handleSaveTrip = async (updatedTrip: Trip) => {
+    try {
+      await api.updateTrip(updatedTrip);
+      await loadTrips();
+      setEditingTrip(null);
+      alert("Поездка обновлена");
+    } catch (error) {
+      console.error('Error updating trip:', error);
+      alert('Ошибка обновления: ' + (error as Error).message);
+    }
   };
 
   if (!user) {
@@ -809,11 +985,20 @@ export default function App() {
     <HashRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} user={user} loading={tripsLoading} />} />
+          <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} deleteTrip={deleteTrip} onEdit={handleEditTrip} user={user} loading={tripsLoading} />} />
           <Route path="/create" element={<CreateTrip user={user} addTrip={addTrip} />} />
           <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} />} />
         </Routes>
       </Layout>
+
+      {/* Edit Trip Modal */}
+      {editingTrip && (
+        <EditTripModal
+          trip={editingTrip}
+          onSave={handleSaveTrip}
+          onClose={() => setEditingTrip(null)}
+        />
+      )}
     </HashRouter>
   );
 }

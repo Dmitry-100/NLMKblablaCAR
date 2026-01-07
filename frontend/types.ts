@@ -62,4 +62,5 @@ export interface Trip {
   comment: string;
   tripGroupId?: string; // Links outbound and return trips
   isReturn?: boolean;
+  passengers?: User[]; // List of passengers who booked the trip
 }
