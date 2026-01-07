@@ -1,0 +1,153 @@
+// Prisma schema для NLMKblablaCAR
+// Поддерживает SQLite (разработка) и PostgreSQL (продакшен)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Для продакшена поменять на "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+// SQLite не поддерживает enum, поэтому используем String
+// При переходе на PostgreSQL можно раскомментировать enum
+
+// enum City {
+//   Moscow
+//   Lipetsk
+// }
+
+// enum Role {
+//   Driver
+//   Passenger
+//   Both
+// }
+
+// enum MusicPref {
+//   Quiet
+//   Normal
+//   Loud
+// }
+
+// enum BaggageSize {
+//   Hand
+//   Medium
+//   Suitcase
+// }
+
+// enum ConversationPref {
+//   Chatty
+//   Quiet
+// }
+
+// ============ MODELS ============
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatarUrl String   @default("")
+  homeCity  String   @default("Moscow") // City enum
+  role      String   @default("Passenger") // Role enum
+  rating    Float    @default(5.0)
+  
+  // Preferences (embedded as JSON or separate fields)
+  prefMusic        String  @default("Normal") // MusicPref
+  prefSmoking      Boolean @default(false)
+  prefPets         Boolean @default(false)
+  prefBaggage      String  @default("Hand") // BaggageSize
+  prefConversation String  @default("Chatty") // ConversationPref
+  prefAc           Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  tripsAsDriver    Trip[]    @relation("DriverTrips")
+  bookings         Booking[]
+  reviewsGiven     Review[]  @relation("ReviewAuthor")
+  reviewsReceived  Review[]  @relation("ReviewTarget")
+}
+
+model Trip {
+  id              String   @id @default(cuid())
+  
+  // Driver
+  driverId        String
+  driver          User     @relation("DriverTrips", fields: [driverId], references: [id])
+  
+  // Route
+  fromCity        String   // City enum: "Moscow" | "Lipetsk"
+  toCity          String   // City enum
+  date            String   // ISO Date: YYYY-MM-DD
+  time            String   // HH:mm
+  pickupLocation  String
+  dropoffLocation String
+  
+  // Seats
+  seatsTotal      Int      @default(3)
+  seatsBooked     Int      @default(0)
+  
+  // Preferences (copied from driver at creation time)
+  prefMusic        String  @default("Normal")
+  prefSmoking      Boolean @default(false)
+  prefPets         Boolean @default(false)
+  prefBaggage      String  @default("Hand")
+  prefConversation String  @default("Chatty")
+  prefAc           Boolean @default(true)
+  
+  comment         String   @default("")
+  
+  // Trip grouping (outbound + return)
+  tripGroupId     String?
+  isReturn        Boolean  @default(false)
+  
+  // Status
+  status          String   @default("active") // active, completed, cancelled
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  bookings        Booking[]
+  reviews         Review[]
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  passengerId String
+  passenger   User     @relation(fields: [passengerId], references: [id])
+  
+  status      String   @default("confirmed") // pending, confirmed, cancelled
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([tripId, passengerId]) // Один пассажир - одна бронь на поездку
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  
+  authorId  String
+  author    User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  
+  targetId  String
+  target    User     @relation("ReviewTarget", fields: [targetId], references: [id])
+  
+  rating    Int      // 1-5
+  comment   String   @default("")
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([tripId, authorId, targetId]) // Один отзыв на поездку от автора к цели
+}
