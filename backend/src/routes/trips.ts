@@ -277,6 +277,8 @@ function formatUserResponse(user: any) {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    phone: user.phone || '',
+    bio: user.bio || '',
     homeCity: user.homeCity,
     role: user.role,
     rating: user.rating,

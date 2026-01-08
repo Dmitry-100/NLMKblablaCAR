@@ -8,7 +8,9 @@ const router = Router();
 
 const updateUserSchema = z.object({
   name: z.string().min(2).optional(),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.string().url().optional().or(z.literal('')),
+  phone: z.string().optional(),
+  bio: z.string().max(500).optional(),
   homeCity: z.enum(['Moscow', 'Lipetsk']).optional(),
   role: z.enum(['Driver', 'Passenger', 'Both']).optional(),
   defaultPreferences: z.object({
@@ -62,7 +64,9 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     const updateData: any = {};
     
     if (data.name) updateData.name = data.name;
-    if (data.avatarUrl) updateData.avatarUrl = data.avatarUrl;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.bio !== undefined) updateData.bio = data.bio;
     if (data.homeCity) updateData.homeCity = data.homeCity;
     if (data.role) updateData.role = data.role;
     
@@ -155,6 +159,8 @@ function formatUserResponse(user: any) {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    phone: user.phone || '',
+    bio: user.bio || '',
     homeCity: user.homeCity,
     role: user.role,
     rating: user.rating,

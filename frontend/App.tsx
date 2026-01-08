@@ -6,7 +6,7 @@ import {
 import {
   Car, Sun, Moon, MapPin, Calendar, Clock, User as UserIcon,
   PlusCircle, Search, LogOut, ArrowRight, CheckCircle, Sparkles, AlertCircle,
-  Edit2, Save, X, Loader2, Trash2, Users
+  Edit2, Save, X, Loader2, Trash2, Users, Phone, Camera, FileText
 } from 'lucide-react';
 import { City, Role, User, Trip, Preferences, MusicPref, BaggageSize, ConversationPref } from './types';
 import { DEFAULT_PREFERENCES, APP_NAME } from './constants';
@@ -624,24 +624,56 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
 
                 {isEditing ? (
                     <div className="w-full max-w-xs space-y-3 mb-4">
-                        <input 
-                            type="text" 
-                            value={editData.name} 
+                        <input
+                            type="text"
+                            value={editData.name}
                             onChange={(e) => setEditData({...editData, name: e.target.value})}
                             className="w-full text-center text-xl font-bold text-gray-800 border-b border-sky-200 focus:outline-none bg-transparent"
+                            placeholder="Имя"
                         />
-                        <select 
+                        <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                            <Camera size={16} className="text-gray-400" />
+                            <input
+                                type="text"
+                                value={editData.avatarUrl}
+                                onChange={(e) => setEditData({...editData, avatarUrl: e.target.value})}
+                                className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none"
+                                placeholder="URL фотографии"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                            <Phone size={16} className="text-gray-400" />
+                            <input
+                                type="tel"
+                                value={editData.phone || ''}
+                                onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                                className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none"
+                                placeholder="+7 (999) 123-45-67"
+                            />
+                        </div>
+                        <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-2">
+                            <FileText size={16} className="text-gray-400 mt-1" />
+                            <textarea
+                                value={editData.bio || ''}
+                                onChange={(e) => setEditData({...editData, bio: e.target.value})}
+                                className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none resize-none"
+                                placeholder="О себе и интересах..."
+                                rows={3}
+                                maxLength={500}
+                            />
+                        </div>
+                        <select
                             value={editData.homeCity}
                             onChange={(e) => setEditData({...editData, homeCity: e.target.value as City})}
-                            className="w-full text-center text-gray-500 bg-white border border-gray-200 rounded-lg p-1"
+                            className="w-full text-center text-gray-500 bg-white border border-gray-200 rounded-lg p-2"
                         >
                             <option value={City.Moscow}>Москва</option>
                             <option value={City.Lipetsk}>Липецк</option>
                         </select>
-                         <select 
+                         <select
                             value={editData.role}
                             onChange={(e) => setEditData({...editData, role: e.target.value as Role})}
-                            className="w-full text-center text-gray-500 bg-white border border-gray-200 rounded-lg p-1"
+                            className="w-full text-center text-gray-500 bg-white border border-gray-200 rounded-lg p-2"
                         >
                             <option value={Role.Passenger}>Пассажир</option>
                             <option value={Role.Driver}>Водитель</option>
@@ -652,6 +684,14 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                     <>
                         <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
                         <p className="text-gray-500 mb-2">{getCityName(user.homeCity)}</p>
+                        {user.phone && (
+                            <p className="text-sm text-gray-500 flex items-center gap-1 mb-1">
+                                <Phone size={14} /> {user.phone}
+                            </p>
+                        )}
+                        {user.bio && (
+                            <p className="text-sm text-gray-500 italic max-w-xs mb-2">"{user.bio}"</p>
+                        )}
                     </>
                 )}
 

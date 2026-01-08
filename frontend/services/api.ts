@@ -127,6 +127,8 @@ export const api = {
       body: JSON.stringify({
         name: user.name,
         avatarUrl: user.avatarUrl,
+        phone: user.phone,
+        bio: user.bio,
         homeCity: user.homeCity,
         role: user.role,
         defaultPreferences: user.defaultPreferences,

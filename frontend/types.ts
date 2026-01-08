@@ -40,6 +40,8 @@ export interface User {
   email: string;
   name: string;
   avatarUrl: string;
+  phone: string;
+  bio: string;
   homeCity: City;
   role: Role;
   defaultPreferences: Preferences;
