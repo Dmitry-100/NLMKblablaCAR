@@ -51,6 +51,7 @@ model User {
   avatarUrl String   @default("")
   phone     String   @default("")
   bio       String   @default("")
+  position  String   @default("")
   homeCity  String   @default("Moscow") // City enum
   role      String   @default("Passenger") // Role enum
   rating    Float    @default(5.0)

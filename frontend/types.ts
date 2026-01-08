@@ -42,6 +42,7 @@ export interface User {
   avatarUrl: string;
   phone: string;
   bio: string;
+  position: string;
   homeCity: City;
   role: Role;
   defaultPreferences: Preferences;

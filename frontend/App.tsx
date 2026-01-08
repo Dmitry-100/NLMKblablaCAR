@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  HashRouter, Routes, Route, Link, useNavigate, useLocation 
+import {
+  HashRouter, Routes, Route, Link, useNavigate, useLocation, useParams
 } from 'react-router-dom';
 import {
   Car, Sun, Moon, MapPin, Calendar, Clock, User as UserIcon,
   PlusCircle, Search, LogOut, ArrowRight, CheckCircle, Sparkles, AlertCircle,
-  Edit2, Save, X, Loader2, Trash2, Users, Phone, Camera, FileText
+  Edit2, Save, X, Loader2, Trash2, Users, Phone, Camera, FileText, Briefcase, Mail, Upload
 } from 'lucide-react';
 import { City, Role, User, Trip, Preferences, MusicPref, BaggageSize, ConversationPref } from './types';
 import { DEFAULT_PREFERENCES, APP_NAME } from './constants';
@@ -393,13 +393,13 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4 mb-4">
-                                <img src={trip.driver.avatarUrl} alt={trip.driver.name} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" />
+                            <Link to={`/user/${trip.driver.id}`} className="flex items-center gap-4 mb-4 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
+                                <img src={trip.driver.avatarUrl} alt={trip.driver.name} className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover" />
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900">{trip.driver.name}</p>
+                                    <p className="text-sm font-medium text-gray-900 hover:text-sky-600">{trip.driver.name}</p>
                                     <p className="text-xs text-gray-400">★ {trip.driver.rating.toFixed(1)} Водитель</p>
                                 </div>
-                            </div>
+                            </Link>
 
                             {/* Passengers section */}
                             {passengers.length > 0 && (
@@ -410,10 +410,10 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {passengers.map(p => (
-                                            <div key={p.id} className="flex items-center gap-2 bg-white px-2 py-1 rounded-full shadow-sm">
-                                                <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full" />
-                                                <span className="text-xs text-gray-700">{p.name}</span>
-                                            </div>
+                                            <Link key={p.id} to={`/user/${p.id}`} className="flex items-center gap-2 bg-white px-2 py-1 rounded-full shadow-sm hover:bg-sky-50 transition-colors">
+                                                <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover" />
+                                                <span className="text-xs text-gray-700 hover:text-sky-600">{p.name}</span>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
@@ -561,6 +561,7 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<User>(user);
     const [isSaving, setIsSaving] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -574,11 +575,24 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
         setIsEditing(false);
     };
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 500000) {
+                alert('Файл слишком большой. Максимум 500KB');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setEditData({...editData, avatarUrl: reader.result as string});
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const togglePreference = (key: keyof Preferences) => {
         if (!isEditing) return;
         const current = editData.defaultPreferences;
-        
-        // Simple boolean toggles for demo (except enums)
         if (key === 'smoking') setEditData({...editData, defaultPreferences: {...current, smoking: !current.smoking}});
         if (key === 'pets') setEditData({...editData, defaultPreferences: {...current, pets: !current.pets}});
         if (key === 'ac') setEditData({...editData, defaultPreferences: {...current, ac: !current.ac}});
@@ -590,7 +604,7 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
          const currentVal = editData.defaultPreferences[key];
          const nextIndex = (values.indexOf(currentVal) + 1) % values.length;
          setEditData({
-             ...editData, 
+             ...editData,
              defaultPreferences: { ...editData.defaultPreferences, [key]: values[nextIndex] }
          });
     }
@@ -616,10 +630,27 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                 </div>
 
                 <div className="relative mb-4">
-                    <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full border-4 border-sky-50 shadow-lg" />
-                    <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-sm">
-                        <CheckCircle size={20} className="text-blue-500 fill-blue-100" />
-                    </div>
+                    <img src={isEditing ? editData.avatarUrl : user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full border-4 border-sky-50 shadow-lg object-cover" />
+                    {isEditing && (
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="absolute bottom-0 right-0 bg-sky-500 p-2 rounded-full shadow-lg hover:bg-sky-600 transition-colors"
+                        >
+                            <Camera size={16} className="text-white" />
+                        </button>
+                    )}
+                    {!isEditing && (
+                        <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-sm">
+                            <CheckCircle size={20} className="text-blue-500 fill-blue-100" />
+                        </div>
+                    )}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                    />
                 </div>
 
                 {isEditing ? (
@@ -632,13 +663,13 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                             placeholder="Имя"
                         />
                         <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
-                            <Camera size={16} className="text-gray-400" />
+                            <Briefcase size={16} className="text-gray-400" />
                             <input
                                 type="text"
-                                value={editData.avatarUrl}
-                                onChange={(e) => setEditData({...editData, avatarUrl: e.target.value})}
+                                value={editData.position || ''}
+                                onChange={(e) => setEditData({...editData, position: e.target.value})}
                                 className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none"
-                                placeholder="URL фотографии"
+                                placeholder="Должность"
                             />
                         </div>
                         <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
@@ -683,7 +714,15 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                 ) : (
                     <>
                         <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
+                        {user.position && (
+                            <p className="text-sm text-sky-600 flex items-center gap-1 mb-1">
+                                <Briefcase size={14} /> {user.position}
+                            </p>
+                        )}
                         <p className="text-gray-500 mb-2">{getCityName(user.homeCity)}</p>
+                        <p className="text-sm text-gray-400 flex items-center gap-1 mb-2">
+                            <Mail size={14} /> {user.email}
+                        </p>
                         {user.phone && (
                             <p className="text-sm text-gray-500 flex items-center gap-1 mb-1">
                                 <Phone size={14} /> {user.phone}
@@ -701,7 +740,7 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                         <span className="text-gray-300">({user.rating})</span>
                     </div>
                 )}
-                
+
                 {!isEditing && (
                     <div className="w-full flex justify-center gap-2 mb-4">
                         <Badge color="gray">{user.role}</Badge>
@@ -714,7 +753,7 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                         {isEditing && <Edit2 size={10} />}
                         Предпочтения {isEditing && "(Нажми для изменения)"}
                     </h3>
-                    
+
                     {isEditing ? (
                         <div className="flex flex-wrap justify-center gap-2">
                             <button onClick={() => cycleEnum('music', MusicPref)} className="px-3 py-1 bg-white rounded-full text-xs shadow-sm border">{editData.defaultPreferences.music}</button>
@@ -736,10 +775,97 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                     <span>Нет активных поездок.</span>
                  </div>
             </div>
-            
+
             <button onClick={onLogout} className="w-full mt-8 py-3 text-red-400 hover:text-red-500 text-sm">
                 Выйти
             </button>
+        </div>
+    );
+};
+
+// Public profile view (read-only)
+const UserProfileView = ({ userId, currentUser }: { userId: string, currentUser: User }) => {
+    const [profileUser, setProfileUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const loadUser = async () => {
+            try {
+                const user = await api.getUserById(userId);
+                setProfileUser(user);
+            } catch (error) {
+                console.error('Error loading user:', error);
+            }
+            setLoading(false);
+        };
+        loadUser();
+    }, [userId]);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <Loader2 size={40} className="animate-spin text-sky-400" />
+            </div>
+        );
+    }
+
+    if (!profileUser) {
+        return (
+            <div className="text-center py-20 text-gray-500">
+                Пользователь не найден
+            </div>
+        );
+    }
+
+    return (
+        <div className="pb-20 animate-fade-in">
+            <button onClick={() => navigate(-1)} className="mb-4 text-sky-500 flex items-center gap-1 hover:text-sky-600">
+                <ArrowRight size={16} className="rotate-180" /> Назад
+            </button>
+            <Card className="flex flex-col items-center text-center pt-10 pb-10">
+                <div className="relative mb-4">
+                    <img src={profileUser.avatarUrl} alt={profileUser.name} className="w-24 h-24 rounded-full border-4 border-sky-50 shadow-lg object-cover" />
+                </div>
+
+                <h2 className="text-2xl font-bold text-gray-800">{profileUser.name}</h2>
+                {profileUser.position && (
+                    <p className="text-sm text-sky-600 flex items-center gap-1 mb-1">
+                        <Briefcase size={14} /> {profileUser.position}
+                    </p>
+                )}
+                <p className="text-gray-500 mb-2">{getCityName(profileUser.homeCity)}</p>
+                <p className="text-sm text-gray-400 flex items-center gap-1 mb-2">
+                    <Mail size={14} /> {profileUser.email}
+                </p>
+                {profileUser.phone && (
+                    <p className="text-sm text-gray-500 flex items-center gap-1 mb-1">
+                        <Phone size={14} /> {profileUser.phone}
+                    </p>
+                )}
+                {profileUser.bio && (
+                    <p className="text-sm text-gray-500 italic max-w-xs mb-2">"{profileUser.bio}"</p>
+                )}
+
+                <div className="flex gap-1 text-yellow-400 text-sm mb-4">
+                    {'★'.repeat(Math.round(profileUser.rating))}
+                    <span className="text-gray-300">({profileUser.rating})</span>
+                </div>
+
+                <div className="w-full flex justify-center gap-2 mb-4">
+                    <Badge color="gray">{profileUser.role}</Badge>
+                    <Badge color="blue">Сотрудник</Badge>
+                </div>
+
+                <div className="w-full bg-gray-50 rounded-xl p-4">
+                    <h3 className="text-xs uppercase text-gray-400 font-bold mb-3 tracking-wider">
+                        Предпочтения
+                    </h3>
+                    <div className="flex justify-center">
+                        <PreferenceRow prefs={profileUser.defaultPreferences} />
+                    </div>
+                </div>
+            </Card>
         </div>
     );
 };
@@ -922,6 +1048,13 @@ const EditTripModal = ({ trip, onSave, onClose }: {
     );
 };
 
+// Wrapper for user profile route
+const UserProfileWrapper = ({ currentUser }: { currentUser: User }) => {
+    const { userId } = useParams<{ userId: string }>();
+    if (!userId) return null;
+    return <UserProfileView userId={userId} currentUser={currentUser} />;
+};
+
 // --- Main App Logic ---
 
 export default function App() {
@@ -1028,6 +1161,7 @@ export default function App() {
           <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} deleteTrip={deleteTrip} onEdit={handleEditTrip} user={user} loading={tripsLoading} />} />
           <Route path="/create" element={<CreateTrip user={user} addTrip={addTrip} />} />
           <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} />} />
+          <Route path="/user/:userId" element={<UserProfileWrapper currentUser={user} />} />
         </Routes>
       </Layout>
 

@@ -129,12 +129,21 @@ export const api = {
         avatarUrl: user.avatarUrl,
         phone: user.phone,
         bio: user.bio,
+        position: user.position,
         homeCity: user.homeCity,
         role: user.role,
         defaultPreferences: user.defaultPreferences,
       }),
     });
     return updatedUser;
+  },
+
+  /**
+   * Получить профиль пользователя по ID
+   */
+  async getUserById(userId: string): Promise<User> {
+    const { user } = await request<{ user: User }>(`/users/${userId}`);
+    return user;
   },
   
   // --- TRIPS ---

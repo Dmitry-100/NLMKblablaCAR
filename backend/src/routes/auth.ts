@@ -144,6 +144,7 @@ function formatUserResponse(user: any) {
     avatarUrl: user.avatarUrl,
     phone: user.phone || '',
     bio: user.bio || '',
+    position: user.position || '',
     homeCity: user.homeCity,
     role: user.role,
     rating: user.rating,
