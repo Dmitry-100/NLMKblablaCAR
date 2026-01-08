@@ -155,10 +155,15 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
 
     const handleSubmit = async () => {
         const groupId = `g-${Date.now()}`;
-        
-        // Validation check (simplified)
-        if (!outbound.date || !outbound.time) {
-            alert("Пожалуйста, заполните детали первой поездки");
+
+        // Validation check
+        if (!outbound.date || !outbound.time || !outbound.pickupLocation || !outbound.dropoffLocation) {
+            alert("Пожалуйста, заполните все обязательные поля первой поездки (дата, время, точки посадки и высадки)");
+            return;
+        }
+
+        if (hasReturn && returnTrip.date && (!returnTrip.time || !returnTrip.pickupLocation || !returnTrip.dropoffLocation)) {
+            alert("Пожалуйста, заполните все обязательные поля обратной поездки (время, точки посадки и высадки)");
             return;
         }
 
@@ -288,6 +293,19 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
                              </div>
                         </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <input type="text" placeholder="Откуда (напр. Метро)" className="bg-gray-50 p-3 rounded-lg text-sm"
+                            onChange={e => setReturnTrip({...returnTrip, pickupLocation: e.target.value})} />
+                        <input type="text" placeholder="Куда (напр. Центр)" className="bg-gray-50 p-3 rounded-lg text-sm"
+                            onChange={e => setReturnTrip({...returnTrip, dropoffLocation: e.target.value})} />
+                    </div>
+
+                    <textarea placeholder="Комментарий (опционально)" className="w-full bg-gray-50 p-3 rounded-lg text-sm h-20 mb-4"
+                         onChange={e => setReturnTrip({...returnTrip, comment: e.target.value})}></textarea>
+
+                    <div className="text-xs text-gray-400 mb-2">Предпочтения (из профиля)</div>
+                    <PreferenceRow prefs={returnTrip.preferences!} />
                 </Card>
             ) : (
                 <div className="flex justify-center mb-8">
