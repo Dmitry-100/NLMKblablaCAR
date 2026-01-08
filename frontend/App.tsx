@@ -18,6 +18,15 @@ import { api } from './services/api';
 
 const getCityName = (city: City) => city === City.Moscow ? 'Москва' : 'Липецк';
 
+// Format date from YYYY-MM-DD to DD.MM.YYYY (European format)
+const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}.${month}.${year}`;
+};
+
+// Format time (already 24h, but ensure consistency)
+const formatTime = (timeStr: string) => timeStr; // HH:mm format
+
 // --- Shared Components ---
 
 const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, loading = false }: any) => {
@@ -361,7 +370,7 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
                                           <span className="text-xs text-orange-500 font-bold animate-pulse flex items-center gap-1"><Clock size={12}/> Скоро отправление</span>
                                         }
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-800">{trip.time} <span className="text-sm font-normal text-gray-500"> {trip.date}</span></h3>
+                                    <h3 className="text-xl font-bold text-gray-800">{formatTime(trip.time)} <span className="text-sm font-normal text-gray-500"> {formatDate(trip.date)}</span></h3>
                                 </div>
                                 <div className="text-right flex items-center gap-2 relative z-10">
                                     <div className="text-2xl font-light text-sky-600">{availableSeats} <span className="text-xs text-gray-400">мест</span></div>
@@ -465,23 +474,30 @@ const Schedule = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
     user: User,
     loading: boolean
 }) => {
-    const [filterDir, setFilterDir] = useState<string>('all'); // all, moscow-lipetsk, lipetsk-moscow
+    const [filterDir, setFilterDir] = useState<string>('all'); // all, moscow-lipetsk, lipetsk-moscow, my-trips
     const [filterDateStart, setFilterDateStart] = useState<string>('');
     const [filterDateEnd, setFilterDateEnd] = useState<string>('');
 
     const filteredTrips = useMemo(() => {
         return trips.filter(t => {
+            // My trips filter - where I'm driver or passenger
+            if (filterDir === 'my-trips') {
+                const isDriver = t.driverId === user.id;
+                const isPassenger = t.passengers?.some(p => p.id === user.id);
+                if (!isDriver && !isPassenger) return false;
+            }
+
             // Direction filter
             if (filterDir === 'moscow-lipetsk' && t.from !== City.Moscow) return false;
             if (filterDir === 'lipetsk-moscow' && t.from !== City.Lipetsk) return false;
-            
+
             // Date Range Filter
             if (filterDateStart && t.date < filterDateStart) return false;
             if (filterDateEnd && t.date > filterDateEnd) return false;
-            
+
             return true;
         }).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
-    }, [trips, filterDir, filterDateStart, filterDateEnd]);
+    }, [trips, filterDir, filterDateStart, filterDateEnd, user.id]);
 
     return (
         <div className="pb-20">
@@ -495,19 +511,25 @@ const Schedule = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
             {/* Filters */}
             <div className="flex flex-col gap-3 mb-6">
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                    <button 
+                    <button
                         onClick={() => setFilterDir('all')}
                         className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'all' ? 'bg-slate-800 text-white' : 'bg-white text-gray-600'}`}
                     >
                         Все поездки
                     </button>
-                    <button 
+                    <button
+                        onClick={() => setFilterDir('my-trips')}
+                        className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'my-trips' ? 'bg-green-500 text-white' : 'bg-white text-gray-600'}`}
+                    >
+                        Мои поездки
+                    </button>
+                    <button
                         onClick={() => setFilterDir('moscow-lipetsk')}
                         className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'moscow-lipetsk' ? 'bg-sky-500 text-white' : 'bg-white text-gray-600'}`}
                     >
                         Москва → Липецк
                     </button>
-                    <button 
+                    <button
                         onClick={() => setFilterDir('lipetsk-moscow')}
                         className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'lipetsk-moscow' ? 'bg-pink-500 text-white' : 'bg-white text-gray-600'}`}
                     >
@@ -557,11 +579,23 @@ const Schedule = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
     );
 };
 
-const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: User) => Promise<void>, onLogout: () => void }) => {
+const Profile = ({ user, updateUser, onLogout, trips }: { user: User, updateUser: (u: User) => Promise<void>, onLogout: () => void, trips: Trip[] }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<User>(user);
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    // Get user's active trips
+    const myActiveTrips = useMemo(() => {
+        const now = new Date();
+        return trips.filter(t => {
+            const isDriver = t.driverId === user.id;
+            const isPassenger = t.passengers?.some(p => p.id === user.id);
+            const tripDate = new Date(`${t.date}T${t.time}`);
+            const isActive = tripDate >= now;
+            return (isDriver || isPassenger) && isActive;
+        }).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+    }, [trips, user.id]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -769,11 +803,45 @@ const Profile = ({ user, updateUser, onLogout }: { user: User, updateUser: (u: U
                 </div>
             </Card>
 
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2">История поездок</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2">Мои активные поездки</h3>
             <div className="space-y-4">
-                 <div className="bg-white/60 p-4 rounded-xl flex items-center justify-between text-gray-400 italic">
-                    <span>Нет активных поездок.</span>
-                 </div>
+                {myActiveTrips.length === 0 ? (
+                    <div className="bg-white/60 p-4 rounded-xl flex items-center justify-between text-gray-400 italic">
+                        <span>Нет активных поездок.</span>
+                    </div>
+                ) : (
+                    myActiveTrips.map(trip => {
+                        const isDriver = trip.driverId === user.id;
+                        return (
+                            <Link to="/" key={trip.id} className="block">
+                                <Card className="hover:shadow-2xl cursor-pointer">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <Badge color={trip.from === City.Moscow ? 'blue' : 'pink'}>
+                                                {getCityName(trip.from)} → {getCityName(trip.to)}
+                                            </Badge>
+                                            {isDriver ? (
+                                                <Badge color="green">Вы водитель</Badge>
+                                            ) : (
+                                                <Badge color="gray">Вы пассажир</Badge>
+                                            )}
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-lg font-bold text-gray-800">{formatTime(trip.time)}</div>
+                                            <div className="text-xs text-gray-500">{formatDate(trip.date)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <MapPin size={14} className="text-sky-400" />
+                                        <span>{trip.pickupLocation}</span>
+                                        <ArrowRight size={12} className="text-gray-300" />
+                                        <span>{trip.dropoffLocation}</span>
+                                    </div>
+                                </Card>
+                            </Link>
+                        );
+                    })
+                )}
             </div>
 
             <button onClick={onLogout} className="w-full mt-8 py-3 text-red-400 hover:text-red-500 text-sm">
@@ -1160,7 +1228,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} deleteTrip={deleteTrip} onEdit={handleEditTrip} user={user} loading={tripsLoading} />} />
           <Route path="/create" element={<CreateTrip user={user} addTrip={addTrip} />} />
-          <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} />} />
+          <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} trips={trips} />} />
           <Route path="/user/:userId" element={<UserProfileWrapper currentUser={user} />} />
         </Routes>
       </Layout>
