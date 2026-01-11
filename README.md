@@ -28,7 +28,7 @@
 - Runtime: Node.js + TypeScript
 - Framework: Express.js 4.21
 - Database ORM: Prisma 5.22
-- Database: PostgreSQL (production) / SQLite (dev)
+- Database: PostgreSQL (dev/prod)
 - Authentication: JWT (jsonwebtoken 9.0)
 - Validation: Zod 3.23
 - Security: bcryptjs, CORS
@@ -74,7 +74,7 @@ NLMKblablaCAR/
 │   │       └── bookings.ts    # Бронирование мест
 │   ├── prisma/
 │   │   ├── schema.prisma      # Схема базы данных
-│   │   └── dev.db             # SQLite БД (development)
+│   │   └── dev.db             # (не используется, оставлено для примера)
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── .env                   # DATABASE_URL, JWT_SECRET
@@ -518,7 +518,7 @@ cd backend
 npm install
 
 # Настройка .env
-echo 'DATABASE_URL="file:./dev.db"' > .env
+echo 'DATABASE_URL="postgresql://user:password@localhost:5432/nlmkblablacar"' > .env
 echo 'JWT_SECRET="your-super-secret-key"' >> .env
 
 # Создание БД и таблиц

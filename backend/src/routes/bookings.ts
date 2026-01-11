@@ -56,8 +56,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Вы уже забронировали место в этой поездке' });
     }
     
-    // Проверяем доступные места (макс 2 пассажира)
-    const maxPassengers = 2; // Бизнес-логика: 2 пассажира + водитель
+    // Проверяем доступные места (места считаются вместе с водителем)
+    const maxPassengers = Math.max(0, trip.seatsTotal - 1);
     const currentBookings = trip.bookings.length;
     
     if (currentBookings >= maxPassengers) {

@@ -76,7 +76,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       ]
     });
     
-    res.json({ trips: trips.map(formatTripResponse) });
+    res.json({ trips: trips.map((trip) => formatTripResponse(trip, req.userId)) });
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -91,7 +91,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
  * GET /api/trips/:id
  * Получить детали поездки
  */
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
     const trip = await req.prisma.trip.findUnique({
       where: { id: req.params.id },
@@ -108,7 +108,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Поездка не найдена' });
     }
     
-    res.json({ trip: formatTripResponse(trip) });
+    res.json({ trip: formatTripResponse(trip, req.userId) });
     
   } catch (error) {
     console.error('Get trip error:', error);
@@ -161,7 +161,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       }
     });
     
-    res.status(201).json({ trip: formatTripResponse(trip) });
+    res.status(201).json({ trip: formatTripResponse(trip, req.userId) });
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -220,7 +220,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
       include: { driver: true }
     });
     
-    res.json({ trip: formatTripResponse(updatedTrip) });
+    res.json({ trip: formatTripResponse(updatedTrip, req.userId) });
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -294,7 +294,11 @@ function formatUserResponse(user: any) {
   };
 }
 
-function formatTripResponse(trip: any) {
+function formatTripResponse(trip: any, currentUserId?: string) {
+  const myBooking = currentUserId
+    ? trip.bookings?.find((booking: any) => booking.passengerId === currentUserId)
+    : undefined;
+
   return {
     id: trip.id,
     driverId: trip.driverId,
@@ -319,7 +323,8 @@ function formatTripResponse(trip: any) {
     tripGroupId: trip.tripGroupId,
     isReturn: trip.isReturn,
     status: trip.status,
-    passengers: trip.bookings?.map((b: any) => formatUserResponse(b.passenger)) || []
+    passengers: trip.bookings?.map((b: any) => formatUserResponse(b.passenger)) || [],
+    myBookingId: myBooking?.id
   };
 }
 

@@ -7,8 +7,7 @@ Backend API для корпоративного карпулинга NLMK.
 - **Node.js + Express** — веб-сервер
 - **TypeScript** — типизация
 - **Prisma** — ORM для работы с БД
-- **SQLite** — база данных (для разработки)
-- **PostgreSQL** — база данных (для продакшена)
+- **PostgreSQL** — база данных (dev/prod)
 - **JWT** — авторизация
 - **Zod** — валидация данных
 
@@ -17,7 +16,7 @@ Backend API для корпоративного карпулинга NLMK.
 ### 1. Установка зависимостей
 
 ```bash
-cd nlmk-backend
+cd backend
 npm install
 ```
 
@@ -26,10 +25,10 @@ npm install
 Отредактируйте `.env` файл:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/nlmkblablacar"
 JWT_SECRET="your-super-secret-key-change-in-production"
 PORT=3001
-FRONTEND_URL="http://localhost:5173"
+FRONTEND_URL="http://localhost:3000"
 ```
 
 ### 3. Инициализация базы данных
@@ -132,27 +131,24 @@ useEffect(() => {
 }, []);
 ```
 
-## Миграция на PostgreSQL
+## Локальная PostgreSQL
 
-1. Измените `provider` в `prisma/schema.prisma`:
+1. Установите PostgreSQL и создайте БД:
 
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+```bash
+createdb nlmkblablacar
 ```
 
 2. Обновите `DATABASE_URL` в `.env`:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/nlmk_carpooling"
+DATABASE_URL="postgresql://user:password@localhost:5432/nlmkblablacar"
 ```
 
-3. Выполните миграцию:
+3. Примените схему:
 
 ```bash
-npm run db:migrate
+npm run db:push
 ```
 
 ## Структура проекта

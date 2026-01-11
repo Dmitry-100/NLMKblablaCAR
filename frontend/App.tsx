@@ -322,15 +322,17 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
     );
 };
 
-const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
+const TripList = ({ trips, joinTrip, cancelBooking, deleteTrip, onEdit, user, loading }: {
     trips: Trip[],
     joinTrip: (id: string) => Promise<void>,
+    cancelBooking: (bookingId: string) => Promise<void>,
     deleteTrip: (id: string) => Promise<void>,
     onEdit: (trip: Trip) => void,
     user: User,
     loading: boolean
 }) => {
     const [joiningId, setJoiningId] = useState<string | null>(null);
+    const [cancelingId, setCancelingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const handleJoin = async (id: string) => {
@@ -344,6 +346,13 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
         setDeletingId(id);
         await deleteTrip(id);
         setDeletingId(null);
+    };
+
+    const handleCancelBooking = async (bookingId: string) => {
+        if (!window.confirm('Отменить ваше бронирование?')) return;
+        setCancelingId(bookingId);
+        await cancelBooking(bookingId);
+        setCancelingId(null);
     };
 
     if (loading) {
@@ -364,10 +373,14 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
                 </div>
             ) : (
                 trips.map(trip => {
-                    const availableSeats = Math.max(0, 2 - trip.seatsBooked); // Limit logic: Max 2 pax
+                    const maxPassengers = Math.max(0, trip.seatsTotal - 1);
+                    const availableSeats = Math.max(0, maxPassengers - trip.seatsBooked);
                     const isFull = availableSeats === 0;
                     const isMyTrip = trip.driverId === user.id;
                     const passengers = trip.passengers || [];
+                    const isPassenger = passengers.some((p) => p.id === user.id);
+                    const myBookingId = trip.myBookingId;
+                    const isBooked = isPassenger || !!myBookingId;
 
                     return (
                         <Card key={trip.id} className="relative group overflow-hidden">
@@ -464,15 +477,25 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
 
                             <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
                                 <PreferenceRow prefs={trip.preferences} />
-                                {!isMyTrip && (
+                                {!isMyTrip && myBookingId && (
+                                    <Button
+                                        onClick={() => handleCancelBooking(myBookingId)}
+                                        variant="danger"
+                                        className="px-4 py-2 text-sm"
+                                        loading={cancelingId === myBookingId}
+                                    >
+                                        Отменить
+                                    </Button>
+                                )}
+                                {!isMyTrip && !myBookingId && (
                                     <Button
                                         onClick={() => handleJoin(trip.id)}
-                                        disabled={isFull}
+                                        disabled={isFull || isBooked}
                                         variant={isFull ? 'ghost' : 'primary'}
                                         className="px-4 py-2 text-sm"
                                         loading={joiningId === trip.id}
                                     >
-                                        {isFull ? 'Занято' : 'Поехать'}
+                                        {isBooked ? 'Вы записаны' : (isFull ? 'Занято' : 'Поехать')}
                                     </Button>
                                 )}
                             </div>
@@ -484,9 +507,10 @@ const TripList = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
     );
 }
 
-const Schedule = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
+const Schedule = ({ trips, joinTrip, cancelBooking, deleteTrip, onEdit, user, loading }: {
     trips: Trip[],
     joinTrip: (id: string) => Promise<void>,
+    cancelBooking: (bookingId: string) => Promise<void>,
     deleteTrip: (id: string) => Promise<void>,
     onEdit: (trip: Trip) => void,
     user: User,
@@ -592,7 +616,15 @@ const Schedule = ({ trips, joinTrip, deleteTrip, onEdit, user, loading }: {
                 </div>
             </div>
 
-            <TripList trips={filteredTrips} joinTrip={joinTrip} deleteTrip={deleteTrip} onEdit={onEdit} user={user} loading={loading} />
+            <TripList
+                trips={filteredTrips}
+                joinTrip={joinTrip}
+                cancelBooking={cancelBooking}
+                deleteTrip={deleteTrip}
+                onEdit={onEdit}
+                user={user}
+                loading={loading}
+            />
         </div>
     );
 };
@@ -1152,8 +1184,22 @@ export default function App() {
 
   // Initial load
   useEffect(() => {
-    // Check if user is logged in (persisted session could be added here,
-    // but for now we rely on explicit login form for demo purposes)
+    let isMounted = true;
+    const restoreSession = async () => {
+        setLoading(true);
+        const currentUser = await api.getCurrentUser();
+        if (isMounted && currentUser) {
+            setUser(currentUser);
+        }
+        if (isMounted) {
+            setLoading(false);
+        }
+    };
+
+    restoreSession();
+    return () => {
+        isMounted = false;
+    };
   }, []);
 
   // Fetch trips when user is logged in
@@ -1172,13 +1218,15 @@ export default function App() {
 
   const handleLogin = async (email: string) => {
     setLoading(true);
-    const u = await api.getUser(email);
+    const u = await api.login(email);
     setUser(u);
     setLoading(false);
   };
 
   const handleLogout = () => {
+      api.logout();
       setUser(null);
+      setTrips([]);
   }
 
   const addTrip = async (newTrips: Trip[]) => {
@@ -1194,8 +1242,8 @@ export default function App() {
   };
 
   const updateUser = async (updatedUser: User) => {
-      await api.updateUser(updatedUser);
-      setUser(updatedUser);
+      const savedUser = await api.updateUser(updatedUser);
+      setUser(savedUser);
   };
 
   const joinTrip = async (tripId: string) => {
@@ -1217,6 +1265,17 @@ export default function App() {
     } catch (error) {
       console.error('Error deleting trip:', error);
       alert('Ошибка отмены: ' + (error as Error).message);
+    }
+  };
+
+  const cancelBooking = async (bookingId: string) => {
+    try {
+      await api.cancelBooking(bookingId);
+      await loadTrips();
+      alert("Бронирование отменено");
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      alert('Ошибка отмены бронирования: ' + (error as Error).message);
     }
   };
 
@@ -1244,7 +1303,20 @@ export default function App() {
     <HashRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Schedule trips={trips} joinTrip={joinTrip} deleteTrip={deleteTrip} onEdit={handleEditTrip} user={user} loading={tripsLoading} />} />
+          <Route
+            path="/"
+            element={
+              <Schedule
+                trips={trips}
+                joinTrip={joinTrip}
+                cancelBooking={cancelBooking}
+                deleteTrip={deleteTrip}
+                onEdit={handleEditTrip}
+                user={user}
+                loading={tripsLoading}
+              />
+            }
+          />
           <Route path="/create" element={<CreateTrip user={user} addTrip={addTrip} />} />
           <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} trips={trips} />} />
           <Route path="/user/:userId" element={<UserProfileWrapper currentUser={user} />} />
