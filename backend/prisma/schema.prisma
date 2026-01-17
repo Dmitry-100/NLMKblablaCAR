@@ -88,6 +88,12 @@ model Trip {
   time            String   // HH:mm
   pickupLocation  String
   dropoffLocation String
+
+  // Coordinates (from Yandex Maps)
+  pickupLat       Float?   // Latitude for pickup location
+  pickupLng       Float?   // Longitude for pickup location
+  dropoffLat      Float?   // Latitude for dropoff location
+  dropoffLng      Float?   // Longitude for dropoff location
   
   // Seats
   seatsTotal      Int      @default(3)

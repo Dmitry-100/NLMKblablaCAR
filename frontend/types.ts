@@ -59,6 +59,10 @@ export interface Trip {
   time: string; // HH:mm
   pickupLocation: string;
   dropoffLocation: string;
+  pickupLat?: number;  // Координаты места посадки
+  pickupLng?: number;
+  dropoffLat?: number; // Координаты места высадки
+  dropoffLng?: number;
   seatsTotal: number;
   seatsBooked: number;
   preferences: Preferences;

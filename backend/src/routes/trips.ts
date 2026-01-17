@@ -13,6 +13,11 @@ const createTripSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/, 'Формат времени: HH:mm'),
   pickupLocation: z.string().min(1, 'Укажите место посадки'),
   dropoffLocation: z.string().min(1, 'Укажите место высадки'),
+  // Coordinates from Yandex Maps
+  pickupLat: z.number().optional(),
+  pickupLng: z.number().optional(),
+  dropoffLat: z.number().optional(),
+  dropoffLng: z.number().optional(),
   seatsTotal: z.number().int().min(1).max(4).default(3),
   comment: z.string().optional().default(''),
   tripGroupId: z.string().optional(),
@@ -158,6 +163,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         time: data.time,
         pickupLocation: data.pickupLocation,
         dropoffLocation: data.dropoffLocation,
+        // Coordinates from Yandex Maps
+        pickupLat: data.pickupLat,
+        pickupLng: data.pickupLng,
+        dropoffLat: data.dropoffLat,
+        dropoffLng: data.dropoffLng,
         seatsTotal: data.seatsTotal,
         seatsBooked: 0,
         comment: data.comment || '',
@@ -209,13 +219,18 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     
     // Формируем объект обновления
     const updateData: any = {};
-    
+
     if (data.from) updateData.fromCity = data.from;
     if (data.to) updateData.toCity = data.to;
     if (data.date) updateData.date = data.date;
     if (data.time) updateData.time = data.time;
     if (data.pickupLocation) updateData.pickupLocation = data.pickupLocation;
     if (data.dropoffLocation) updateData.dropoffLocation = data.dropoffLocation;
+    // Coordinates from Yandex Maps (allow setting to null)
+    if (data.pickupLat !== undefined) updateData.pickupLat = data.pickupLat;
+    if (data.pickupLng !== undefined) updateData.pickupLng = data.pickupLng;
+    if (data.dropoffLat !== undefined) updateData.dropoffLat = data.dropoffLat;
+    if (data.dropoffLng !== undefined) updateData.dropoffLng = data.dropoffLng;
     if (data.seatsTotal) updateData.seatsTotal = data.seatsTotal;
     if (data.comment !== undefined) updateData.comment = data.comment;
     
@@ -324,6 +339,11 @@ function formatTripResponse(trip: any, currentUserId?: string) {
     time: trip.time,
     pickupLocation: trip.pickupLocation,
     dropoffLocation: trip.dropoffLocation,
+    // Coordinates from Yandex Maps
+    pickupLat: trip.pickupLat,
+    pickupLng: trip.pickupLng,
+    dropoffLat: trip.dropoffLat,
+    dropoffLng: trip.dropoffLng,
     seatsTotal: trip.seatsTotal,
     seatsBooked: trip.seatsBooked,
     preferences: {

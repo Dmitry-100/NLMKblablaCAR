@@ -13,6 +13,11 @@ import { DEFAULT_PREFERENCES, APP_NAME } from './constants';
 import { PreferenceRow } from './components/Icons';
 import { generateAssistantResponse } from './services/geminiService';
 import { api } from './services/api';
+import { YandexMapsProvider } from './services/YandexMapsProvider';
+import { LocationInput } from './components/LocationInput';
+import { TripRouteMap } from './components/TripRouteMap';
+import { MapPicker } from './components/MapPicker';
+import { LocationData } from './services/yandexMapsService';
 
 // --- Shared Helpers ---
 
@@ -276,7 +281,14 @@ const Assistant = () => {
 const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Promise<void> }) => {
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
+    // MapPicker state
+    const [mapPickerOpen, setMapPickerOpen] = useState<{
+        type: 'outbound-pickup' | 'outbound-dropoff' | 'return-pickup' | 'return-dropoff';
+        city: City;
+        initialLocation?: LocationData;
+    } | null>(null);
+
     // Form State
     const [outbound, setOutbound] = useState<Partial<Trip>>({
         from: City.Moscow,
@@ -402,11 +414,49 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input type="text" placeholder="Откуда (напр. Метро Аннино)" className="bg-gray-50 p-3 rounded-lg text-sm"
-                        onChange={e => setOutbound({...outbound, pickupLocation: e.target.value})} />
-                    <input type="text" placeholder="Куда (напр. Центр)" className="bg-gray-50 p-3 rounded-lg text-sm"
-                        onChange={e => setOutbound({...outbound, dropoffLocation: e.target.value})} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <LocationInput
+                        value={outbound.pickupLocation || ''}
+                        onChange={(loc) => setOutbound({
+                            ...outbound,
+                            pickupLocation: loc.address,
+                            pickupLat: loc.lat,
+                            pickupLng: loc.lng
+                        })}
+                        city={outbound.from!}
+                        placeholder="Откуда (напр. Метро Аннино)"
+                        label="Место посадки"
+                        onOpenMap={() => setMapPickerOpen({
+                            type: 'outbound-pickup',
+                            city: outbound.from!,
+                            initialLocation: outbound.pickupLocation ? {
+                                address: outbound.pickupLocation,
+                                lat: outbound.pickupLat,
+                                lng: outbound.pickupLng
+                            } : undefined
+                        })}
+                    />
+                    <LocationInput
+                        value={outbound.dropoffLocation || ''}
+                        onChange={(loc) => setOutbound({
+                            ...outbound,
+                            dropoffLocation: loc.address,
+                            dropoffLat: loc.lat,
+                            dropoffLng: loc.lng
+                        })}
+                        city={outbound.to!}
+                        placeholder="Куда (напр. Центр)"
+                        label="Место высадки"
+                        onOpenMap={() => setMapPickerOpen({
+                            type: 'outbound-dropoff',
+                            city: outbound.to!,
+                            initialLocation: outbound.dropoffLocation ? {
+                                address: outbound.dropoffLocation,
+                                lat: outbound.dropoffLat,
+                                lng: outbound.dropoffLng
+                            } : undefined
+                        })}
+                    />
                 </div>
                 
                 <textarea placeholder="Комментарий (напр., 'Выезжаю рано, тихая поездка')" className="w-full bg-gray-50 p-3 rounded-lg text-sm h-20 mb-4"
@@ -446,11 +496,49 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <input type="text" placeholder="Откуда (напр. Метро)" className="bg-gray-50 p-3 rounded-lg text-sm"
-                            onChange={e => setReturnTrip({...returnTrip, pickupLocation: e.target.value})} />
-                        <input type="text" placeholder="Куда (напр. Центр)" className="bg-gray-50 p-3 rounded-lg text-sm"
-                            onChange={e => setReturnTrip({...returnTrip, dropoffLocation: e.target.value})} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <LocationInput
+                            value={returnTrip.pickupLocation || ''}
+                            onChange={(loc) => setReturnTrip({
+                                ...returnTrip,
+                                pickupLocation: loc.address,
+                                pickupLat: loc.lat,
+                                pickupLng: loc.lng
+                            })}
+                            city={returnTrip.from!}
+                            placeholder="Откуда (напр. Метро)"
+                            label="Место посадки"
+                            onOpenMap={() => setMapPickerOpen({
+                                type: 'return-pickup',
+                                city: returnTrip.from!,
+                                initialLocation: returnTrip.pickupLocation ? {
+                                    address: returnTrip.pickupLocation,
+                                    lat: returnTrip.pickupLat,
+                                    lng: returnTrip.pickupLng
+                                } : undefined
+                            })}
+                        />
+                        <LocationInput
+                            value={returnTrip.dropoffLocation || ''}
+                            onChange={(loc) => setReturnTrip({
+                                ...returnTrip,
+                                dropoffLocation: loc.address,
+                                dropoffLat: loc.lat,
+                                dropoffLng: loc.lng
+                            })}
+                            city={returnTrip.to!}
+                            placeholder="Куда (напр. Центр)"
+                            label="Место высадки"
+                            onOpenMap={() => setMapPickerOpen({
+                                type: 'return-dropoff',
+                                city: returnTrip.to!,
+                                initialLocation: returnTrip.dropoffLocation ? {
+                                    address: returnTrip.dropoffLocation,
+                                    lat: returnTrip.dropoffLat,
+                                    lng: returnTrip.dropoffLng
+                                } : undefined
+                            })}
+                        />
                     </div>
 
                     <textarea placeholder="Комментарий (опционально)" className="w-full bg-gray-50 p-3 rounded-lg text-sm h-20 mb-4"
@@ -470,6 +558,48 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
                     Опубликовать
                 </Button>
             </div>
+
+            {/* MapPicker Modal */}
+            {mapPickerOpen && (
+                <MapPicker
+                    isOpen={true}
+                    onClose={() => setMapPickerOpen(null)}
+                    city={mapPickerOpen.city}
+                    initialLocation={mapPickerOpen.initialLocation}
+                    onSelect={(location) => {
+                        if (mapPickerOpen.type === 'outbound-pickup') {
+                            setOutbound({
+                                ...outbound,
+                                pickupLocation: location.address,
+                                pickupLat: location.lat,
+                                pickupLng: location.lng
+                            });
+                        } else if (mapPickerOpen.type === 'outbound-dropoff') {
+                            setOutbound({
+                                ...outbound,
+                                dropoffLocation: location.address,
+                                dropoffLat: location.lat,
+                                dropoffLng: location.lng
+                            });
+                        } else if (mapPickerOpen.type === 'return-pickup') {
+                            setReturnTrip({
+                                ...returnTrip,
+                                pickupLocation: location.address,
+                                pickupLat: location.lat,
+                                pickupLng: location.lng
+                            });
+                        } else if (mapPickerOpen.type === 'return-dropoff') {
+                            setReturnTrip({
+                                ...returnTrip,
+                                dropoffLocation: location.address,
+                                dropoffLat: location.lat,
+                                dropoffLng: location.lng
+                            });
+                        }
+                        setMapPickerOpen(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
@@ -611,17 +741,16 @@ const TripList = ({ trips, joinTrip, cancelBooking, deleteTrip, onEdit, user, lo
                                 </div>
                             )}
 
-                            <div className="flex gap-4 text-sm text-gray-600 mb-4 bg-gray-50/50 p-3 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-sky-400"></div>
-                                    {trip.pickupLocation}
-                                </div>
-                                <ArrowRight size={14} className="text-gray-300" />
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-pink-400"></div>
-                                    {trip.dropoffLocation}
-                                </div>
-                            </div>
+                            {/* Trip Route Map */}
+                            <TripRouteMap
+                                pickupLocation={trip.pickupLocation}
+                                dropoffLocation={trip.dropoffLocation}
+                                pickupCoords={trip.pickupLat && trip.pickupLng ? { lat: trip.pickupLat, lng: trip.pickupLng } : undefined}
+                                dropoffCoords={trip.dropoffLat && trip.dropoffLng ? { lat: trip.dropoffLat, lng: trip.dropoffLng } : undefined}
+                                fromCity={trip.from}
+                                toCity={trip.to}
+                                className="mb-4 h-32"
+                            />
 
                             {trip.comment && (
                                 <div className="mb-4 text-sm text-gray-500 italic">"{trip.comment}"</div>
@@ -1426,6 +1555,11 @@ const EditTripModal = ({ trip, onSave, onClose }: {
 }) => {
     const [editData, setEditData] = useState<Trip>(trip);
     const [isSaving, setIsSaving] = useState(false);
+    const [mapPickerOpen, setMapPickerOpen] = useState<{
+        type: 'pickup' | 'dropoff';
+        city: City;
+        initialLocation?: LocationData;
+    } | null>(null);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -1434,8 +1568,9 @@ const EditTripModal = ({ trip, onSave, onClose }: {
     };
 
     return (
+        <>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">Редактировать поездку</h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
@@ -1464,25 +1599,49 @@ const EditTripModal = ({ trip, onSave, onClose }: {
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Место посадки</label>
-                        <input
-                            type="text"
-                            value={editData.pickupLocation}
-                            onChange={e => setEditData({...editData, pickupLocation: e.target.value})}
-                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
-                        />
-                    </div>
+                    <LocationInput
+                        value={editData.pickupLocation}
+                        onChange={(loc) => setEditData({
+                            ...editData,
+                            pickupLocation: loc.address,
+                            pickupLat: loc.lat,
+                            pickupLng: loc.lng
+                        })}
+                        city={editData.from}
+                        placeholder="Место посадки"
+                        label="Место посадки"
+                        onOpenMap={() => setMapPickerOpen({
+                            type: 'pickup',
+                            city: editData.from,
+                            initialLocation: editData.pickupLocation ? {
+                                address: editData.pickupLocation,
+                                lat: editData.pickupLat,
+                                lng: editData.pickupLng
+                            } : undefined
+                        })}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Место высадки</label>
-                        <input
-                            type="text"
-                            value={editData.dropoffLocation}
-                            onChange={e => setEditData({...editData, dropoffLocation: e.target.value})}
-                            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
-                        />
-                    </div>
+                    <LocationInput
+                        value={editData.dropoffLocation}
+                        onChange={(loc) => setEditData({
+                            ...editData,
+                            dropoffLocation: loc.address,
+                            dropoffLat: loc.lat,
+                            dropoffLng: loc.lng
+                        })}
+                        city={editData.to}
+                        placeholder="Место высадки"
+                        label="Место высадки"
+                        onOpenMap={() => setMapPickerOpen({
+                            type: 'dropoff',
+                            city: editData.to,
+                            initialLocation: editData.dropoffLocation ? {
+                                address: editData.dropoffLocation,
+                                lat: editData.dropoffLat,
+                                lng: editData.dropoffLng
+                            } : undefined
+                        })}
+                    />
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
@@ -1505,6 +1664,35 @@ const EditTripModal = ({ trip, onSave, onClose }: {
                 </div>
             </div>
         </div>
+
+        {/* MapPicker for EditTripModal */}
+        {mapPickerOpen && (
+            <MapPicker
+                isOpen={true}
+                onClose={() => setMapPickerOpen(null)}
+                city={mapPickerOpen.city}
+                initialLocation={mapPickerOpen.initialLocation}
+                onSelect={(location) => {
+                    if (mapPickerOpen.type === 'pickup') {
+                        setEditData({
+                            ...editData,
+                            pickupLocation: location.address,
+                            pickupLat: location.lat,
+                            pickupLng: location.lng
+                        });
+                    } else {
+                        setEditData({
+                            ...editData,
+                            dropoffLocation: location.address,
+                            dropoffLat: location.lat,
+                            dropoffLng: location.lng
+                        });
+                    }
+                    setMapPickerOpen(null);
+                }}
+            />
+        )}
+        </>
     );
 };
 
@@ -1680,6 +1868,7 @@ export default function App() {
   }
 
   return (
+    <YandexMapsProvider apiKey={import.meta.env.VITE_YANDEX_MAPS_API_KEY || ''}>
     <HashRouter>
       <Layout>
         <Routes>
@@ -1724,5 +1913,6 @@ export default function App() {
         />
       )}
     </HashRouter>
+    </YandexMapsProvider>
   );
 }
