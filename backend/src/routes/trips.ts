@@ -123,7 +123,14 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const data = createTripSchema.parse(req.body);
-    
+
+    // Проверяем, что дата поездки не в прошлом
+    const tripDate = new Date(data.date + 'T' + data.time);
+    const now = new Date();
+    if (tripDate < now) {
+      return res.status(400).json({ error: 'Нельзя создать поездку в прошлом' });
+    }
+
     // Получаем пользователя для копирования preferences
     const user = await req.prisma.user.findUnique({
       where: { id: req.userId }

@@ -61,13 +61,51 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
 
+// ============ AUTO-ARCHIVE PAST TRIPS ============
+
+/**
+ * Архивирует поездки, которые уже состоялись (дата < сегодня)
+ * Переводит их статус из 'active' в 'completed'
+ */
+async function archivePastTrips() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    const result = await prisma.trip.updateMany({
+      where: {
+        status: 'active',
+        date: {
+          lt: todayStr
+        }
+      },
+      data: {
+        status: 'completed'
+      }
+    });
+
+    if (result.count > 0) {
+      console.log(`📦 Архивировано ${result.count} прошедших поездок`);
+    }
+  } catch (error) {
+    console.error('Ошибка архивации поездок:', error);
+  }
+}
+
 // ============ START ============
 
 async function main() {
   try {
     await prisma.$connect();
     console.log('✅ Database connected');
-    
+
+    // Архивируем прошедшие поездки при старте
+    await archivePastTrips();
+
+    // Запускаем периодическую архивацию каждый час
+    setInterval(archivePastTrips, 60 * 60 * 1000);
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📚 API docs: http://localhost:${PORT}/api/health`);
