@@ -3,7 +3,7 @@
  * Подключается к реальному бэкенду вместо localStorage
  */
 
-import { Trip, User } from '../types';
+import { Trip, User, Review, PendingReview } from '../types';
 
 // ============ CONFIGURATION ============
 
@@ -258,6 +258,45 @@ export const api = {
     await request(`/bookings/${bookingId}`, {
       method: 'DELETE',
     });
+  },
+
+  // --- REVIEWS ---
+
+  /**
+   * Создать отзыв о пользователе
+   */
+  async submitReview(tripId: string, targetUserId: string, rating: number, comment?: string): Promise<Review> {
+    const { review } = await request<{ review: Review }>('/reviews', {
+      method: 'POST',
+      body: JSON.stringify({ tripId, targetUserId, rating, comment: comment || '' }),
+    });
+    return review;
+  },
+
+  /**
+   * Пропустить отзыв
+   */
+  async skipReview(tripId: string, targetUserId: string): Promise<void> {
+    await request('/reviews/skip', {
+      method: 'POST',
+      body: JSON.stringify({ tripId, targetUserId }),
+    });
+  },
+
+  /**
+   * Получить поездки, ожидающие отзыва
+   */
+  async getPendingReviews(): Promise<PendingReview[]> {
+    const { pendingReviews } = await request<{ pendingReviews: PendingReview[] }>('/reviews/pending');
+    return pendingReviews;
+  },
+
+  /**
+   * Получить отзывы о пользователе
+   */
+  async getUserReviews(userId: string): Promise<Review[]> {
+    const { reviews } = await request<{ reviews: Review[] }>(`/reviews/user/${userId}`);
+    return reviews;
   },
 };
 

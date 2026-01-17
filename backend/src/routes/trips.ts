@@ -34,7 +34,8 @@ const querySchema = z.object({
   to: z.enum(['Moscow', 'Lipetsk']).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
-  status: z.enum(['active', 'completed', 'cancelled']).optional()
+  status: z.enum(['active', 'completed', 'cancelled', 'archived']).optional(),
+  includeArchived: z.string().optional() // 'true' для включения archived
 });
 
 // ============ ROUTES ============
@@ -46,21 +47,28 @@ const querySchema = z.object({
 router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
     const query = querySchema.parse(req.query);
-    
+
     // Строим фильтры
-    const where: any = {
-      status: query.status || 'active'
-    };
-    
+    const where: any = {};
+
+    // Логика статусов:
+    // - Если указан конкретный статус — фильтруем по нему
+    // - По умолчанию показываем только 'active' (не archived, не completed, не cancelled)
+    if (query.status) {
+      where.status = query.status;
+    } else {
+      where.status = 'active';
+    }
+
     if (query.from) where.fromCity = query.from;
     if (query.to) where.toCity = query.to;
-    
+
     if (query.dateFrom || query.dateTo) {
       where.date = {};
       if (query.dateFrom) where.date.gte = query.dateFrom;
       if (query.dateTo) where.date.lte = query.dateTo;
     }
-    
+
     const trips = await req.prisma.trip.findMany({
       where,
       include: {

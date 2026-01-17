@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import tripsRoutes from './routes/trips.js';
 import bookingsRoutes from './routes/bookings.js';
+import reviewsRoutes from './routes/reviews.js';
 
 // ============ SETUP ============
 
@@ -46,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/trips', tripsRoutes);
 app.use('/api/bookings', bookingsRoutes);
+app.use('/api/reviews', reviewsRoutes);
 
 // ============ ERROR HANDLING ============
 

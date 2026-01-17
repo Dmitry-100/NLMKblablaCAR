@@ -6,9 +6,9 @@ import {
 import {
   Car, Sun, Moon, MapPin, Calendar, Clock, User as UserIcon,
   PlusCircle, Search, LogOut, ArrowRight, CheckCircle, Sparkles, AlertCircle,
-  Edit2, Save, X, Loader2, Trash2, Users, Phone, Camera, FileText, Briefcase, Mail, Upload
+  Edit2, Save, X, Loader2, Trash2, Users, Phone, Camera, FileText, Briefcase, Mail, Upload, Star, MessageSquare
 } from 'lucide-react';
-import { City, Role, User, Trip, Preferences, MusicPref, BaggageSize, ConversationPref } from './types';
+import { City, Role, User, Trip, Preferences, MusicPref, BaggageSize, ConversationPref, Review, PendingReview } from './types';
 import { DEFAULT_PREFERENCES, APP_NAME } from './constants';
 import { PreferenceRow } from './components/Icons';
 import { generateAssistantResponse } from './services/geminiService';
@@ -66,6 +66,158 @@ const Badge = ({ children, color = "blue" }: any) => {
     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[color as keyof typeof colors]}`}>
       {children}
     </span>
+  );
+};
+
+// --- Stars Component ---
+
+const Stars = ({ rating, interactive = false, onChange, size = 16 }: {
+  rating: number,
+  interactive?: boolean,
+  onChange?: (rating: number) => void,
+  size?: number
+}) => {
+  const [hoverRating, setHoverRating] = useState(0);
+
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button
+          key={star}
+          type="button"
+          disabled={!interactive}
+          onClick={() => interactive && onChange?.(star)}
+          onMouseEnter={() => interactive && setHoverRating(star)}
+          onMouseLeave={() => interactive && setHoverRating(0)}
+          className={`${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
+        >
+          <Star
+            size={size}
+            className={`${
+              star <= (hoverRating || rating)
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'fill-gray-200 text-gray-200'
+            } transition-colors`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// --- Review Modal ---
+
+const ReviewModal = ({
+  isOpen,
+  onClose,
+  trip,
+  targetUser,
+  onSubmit,
+  onSkip
+}: {
+  isOpen: boolean,
+  onClose: () => void,
+  trip: PendingReview['trip'],
+  targetUser: User,
+  onSubmit: (rating: number, comment: string) => Promise<void>,
+  onSkip: () => Promise<void>
+}) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    if (rating === 0) {
+      alert('Пожалуйста, выберите рейтинг');
+      return;
+    }
+    setIsSubmitting(true);
+    await onSubmit(rating, comment);
+    setIsSubmitting(false);
+    setRating(0);
+    setComment('');
+  };
+
+  const handleSkip = async () => {
+    setIsSkipping(true);
+    await onSkip();
+    setIsSkipping(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-800">Оставить отзыв</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Trip info */}
+        <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm">
+          <div className="flex items-center gap-2 text-gray-600">
+            <MapPin size={14} className="text-sky-400" />
+            <span>{trip.from === 'Moscow' ? 'Москва' : 'Липецк'} → {trip.to === 'Moscow' ? 'Москва' : 'Липецк'}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-500 mt-1">
+            <Calendar size={14} />
+            <span>{formatDate(trip.date)} в {trip.time}</span>
+          </div>
+        </div>
+
+        {/* Target user */}
+        <div className="flex items-center gap-4 mb-6">
+          <img
+            src={targetUser.avatarUrl}
+            alt={targetUser.name}
+            className="w-16 h-16 rounded-full border-2 border-sky-100 object-cover"
+          />
+          <div>
+            <p className="font-semibold text-gray-800">{targetUser.name}</p>
+            <p className="text-sm text-gray-500">
+              {trip.driverId === targetUser.id ? 'Водитель' : 'Пассажир'}
+            </p>
+          </div>
+        </div>
+
+        {/* Rating */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Оценка</label>
+          <div className="flex justify-center">
+            <Stars rating={rating} interactive onChange={setRating} size={32} />
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Комментарий <span className="text-gray-400">(необязательно)</span>
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Напишите несколько слов о поездке..."
+            className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none resize-none"
+            rows={3}
+            maxLength={500}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Button variant="ghost" onClick={handleSkip} loading={isSkipping} className="flex-1">
+            Пропустить
+          </Button>
+          <Button onClick={handleSubmit} loading={isSubmitting} className="flex-1">
+            <Star size={18} /> Отправить
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -629,11 +781,27 @@ const Schedule = ({ trips, joinTrip, cancelBooking, deleteTrip, onEdit, user, lo
     );
 };
 
-const Profile = ({ user, updateUser, onLogout, trips }: { user: User, updateUser: (u: User) => Promise<void>, onLogout: () => void, trips: Trip[] }) => {
+const Profile = ({ user, updateUser, onLogout, trips, pendingReviews, userReviews, onSubmitReview, onSkipReview, refreshReviews }: {
+    user: User,
+    updateUser: (u: User) => Promise<void>,
+    onLogout: () => void,
+    trips: Trip[],
+    pendingReviews: PendingReview[],
+    userReviews: Review[],
+    onSubmitReview: (tripId: string, targetUserId: string, rating: number, comment: string) => Promise<void>,
+    onSkipReview: (tripId: string, targetUserId: string) => Promise<void>,
+    refreshReviews: () => Promise<void>
+}) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<User>(user);
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    // Review modal state
+    const [reviewModalData, setReviewModalData] = useState<{
+        trip: PendingReview['trip'],
+        targetUser: User
+    } | null>(null);
 
     // Get user's active trips
     const myActiveTrips = useMemo(() => {
@@ -646,6 +814,28 @@ const Profile = ({ user, updateUser, onLogout, trips }: { user: User, updateUser
             return (isDriver || isPassenger) && isActive;
         }).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
     }, [trips, user.id]);
+
+    const handleOpenReviewModal = (trip: PendingReview['trip'], targetUser: User) => {
+        setReviewModalData({ trip, targetUser });
+    };
+
+    const handleCloseReviewModal = () => {
+        setReviewModalData(null);
+    };
+
+    const handleSubmitReview = async (rating: number, comment: string) => {
+        if (!reviewModalData) return;
+        await onSubmitReview(reviewModalData.trip.id, reviewModalData.targetUser.id, rating, comment);
+        setReviewModalData(null);
+        await refreshReviews();
+    };
+
+    const handleSkipReview = async () => {
+        if (!reviewModalData) return;
+        await onSkipReview(reviewModalData.trip.id, reviewModalData.targetUser.id);
+        setReviewModalData(null);
+        await refreshReviews();
+    };
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -894,9 +1084,112 @@ const Profile = ({ user, updateUser, onLogout, trips }: { user: User, updateUser
                 )}
             </div>
 
+            {/* Pending Reviews Section */}
+            {pendingReviews.length > 0 && (
+                <>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2 mt-8 flex items-center gap-2">
+                        <Star size={18} className="text-yellow-400" />
+                        Оцените поездки
+                        <span className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full">
+                            {pendingReviews.reduce((sum, pr) => sum + pr.pendingFor.length, 0)}
+                        </span>
+                    </h3>
+                    <div className="space-y-4">
+                        {pendingReviews.map(({ trip, pendingFor }) => (
+                            <Card key={trip.id} className="border-l-4 border-l-yellow-400">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <Badge color={trip.from === 'Moscow' ? 'blue' : 'pink'}>
+                                            {trip.from === 'Moscow' ? 'Москва' : 'Липецк'} → {trip.to === 'Moscow' ? 'Москва' : 'Липецк'}
+                                        </Badge>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-medium text-gray-800">{trip.time}</div>
+                                        <div className="text-xs text-gray-500">{formatDate(trip.date)}</div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {pendingFor.map(targetUser => (
+                                        <button
+                                            key={targetUser.id}
+                                            onClick={() => handleOpenReviewModal(trip, targetUser)}
+                                            className="flex items-center gap-2 bg-yellow-50 hover:bg-yellow-100 px-3 py-2 rounded-xl transition-colors"
+                                        >
+                                            <img
+                                                src={targetUser.avatarUrl}
+                                                alt={targetUser.name}
+                                                className="w-8 h-8 rounded-full object-cover"
+                                            />
+                                            <span className="text-sm text-gray-700">{targetUser.name}</span>
+                                            <Star size={14} className="text-yellow-500" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* User Reviews Section */}
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2 mt-8 flex items-center gap-2">
+                <MessageSquare size={18} className="text-sky-400" />
+                Отзывы обо мне
+                {userReviews.length > 0 && (
+                    <span className="text-sm text-gray-400 font-normal">({userReviews.length})</span>
+                )}
+            </h3>
+            <div className="space-y-4">
+                {userReviews.length === 0 ? (
+                    <div className="bg-white/60 p-4 rounded-xl text-gray-400 italic text-center">
+                        Пока нет отзывов
+                    </div>
+                ) : (
+                    userReviews.map(review => (
+                        <Card key={review.id}>
+                            <div className="flex items-start gap-3">
+                                <Link to={`/user/${review.author?.id}`}>
+                                    <img
+                                        src={review.author?.avatarUrl}
+                                        alt={review.author?.name}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                </Link>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                        <Link to={`/user/${review.author?.id}`} className="font-medium text-gray-800 hover:text-sky-600">
+                                            {review.author?.name}
+                                        </Link>
+                                        <Stars rating={review.rating} size={14} />
+                                    </div>
+                                    {review.comment && (
+                                        <p className="text-sm text-gray-600 mt-1">{review.comment}</p>
+                                    )}
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
+
             <button onClick={onLogout} className="w-full mt-8 py-3 text-red-400 hover:text-red-500 text-sm">
                 Выйти
             </button>
+
+            {/* Review Modal */}
+            {reviewModalData && (
+                <ReviewModal
+                    isOpen={!!reviewModalData}
+                    onClose={handleCloseReviewModal}
+                    trip={reviewModalData.trip}
+                    targetUser={reviewModalData.targetUser}
+                    onSubmit={handleSubmitReview}
+                    onSkip={handleSkipReview}
+                />
+            )}
         </div>
     );
 };
@@ -904,20 +1197,25 @@ const Profile = ({ user, updateUser, onLogout, trips }: { user: User, updateUser
 // Public profile view (read-only)
 const UserProfileView = ({ userId, currentUser }: { userId: string, currentUser: User }) => {
     const [profileUser, setProfileUser] = useState<User | null>(null);
+    const [userReviews, setUserReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const loadUser = async () => {
+        const loadData = async () => {
             try {
-                const user = await api.getUserById(userId);
+                const [user, reviews] = await Promise.all([
+                    api.getUserById(userId),
+                    api.getUserReviews(userId)
+                ]);
                 setProfileUser(user);
+                setUserReviews(reviews);
             } catch (error) {
                 console.error('Error loading user:', error);
             }
             setLoading(false);
         };
-        loadUser();
+        loadData();
     }, [userId]);
 
     if (loading) {
@@ -967,7 +1265,7 @@ const UserProfileView = ({ userId, currentUser }: { userId: string, currentUser:
 
                 <div className="flex gap-1 text-yellow-400 text-sm mb-4">
                     {'★'.repeat(Math.round(profileUser.rating))}
-                    <span className="text-gray-300">({profileUser.rating})</span>
+                    <span className="text-gray-300">({profileUser.rating.toFixed(1)})</span>
                 </div>
 
                 <div className="w-full flex justify-center gap-2 mb-4">
@@ -984,6 +1282,50 @@ const UserProfileView = ({ userId, currentUser }: { userId: string, currentUser:
                     </div>
                 </div>
             </Card>
+
+            {/* User Reviews Section */}
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2 mt-6 flex items-center gap-2">
+                <MessageSquare size={18} className="text-sky-400" />
+                Отзывы
+                {userReviews.length > 0 && (
+                    <span className="text-sm text-gray-400 font-normal">({userReviews.length})</span>
+                )}
+            </h3>
+            <div className="space-y-4">
+                {userReviews.length === 0 ? (
+                    <div className="bg-white/60 p-4 rounded-xl text-gray-400 italic text-center">
+                        Пока нет отзывов
+                    </div>
+                ) : (
+                    userReviews.map(review => (
+                        <Card key={review.id}>
+                            <div className="flex items-start gap-3">
+                                <Link to={`/user/${review.author?.id}`}>
+                                    <img
+                                        src={review.author?.avatarUrl}
+                                        alt={review.author?.name}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                </Link>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                        <Link to={`/user/${review.author?.id}`} className="font-medium text-gray-800 hover:text-sky-600">
+                                            {review.author?.name}
+                                        </Link>
+                                        <Stars rating={review.rating} size={14} />
+                                    </div>
+                                    {review.comment && (
+                                        <p className="text-sm text-gray-600 mt-1">{review.comment}</p>
+                                    )}
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
         </div>
     );
 };
@@ -1181,6 +1523,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [tripsLoading, setTripsLoading] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
+  const [userReviews, setUserReviews] = useState<Review[]>([]);
 
   // Initial load
   useEffect(() => {
@@ -1202,10 +1546,11 @@ export default function App() {
     };
   }, []);
 
-  // Fetch trips when user is logged in
+  // Fetch trips and reviews when user is logged in
   useEffect(() => {
       if (user) {
           loadTrips();
+          loadReviews();
       }
   }, [user]);
 
@@ -1214,6 +1559,20 @@ export default function App() {
       const data = await api.getTrips();
       setTrips(data);
       setTripsLoading(false);
+  }
+
+  const loadReviews = async () => {
+      if (!user) return;
+      try {
+          const [pending, reviews] = await Promise.all([
+              api.getPendingReviews(),
+              api.getUserReviews(user.id)
+          ]);
+          setPendingReviews(pending);
+          setUserReviews(reviews);
+      } catch (error) {
+          console.error('Error loading reviews:', error);
+      }
   }
 
   const handleLogin = async (email: string) => {
@@ -1295,6 +1654,27 @@ export default function App() {
     }
   };
 
+  const handleSubmitReview = async (tripId: string, targetUserId: string, rating: number, comment: string) => {
+    try {
+      await api.submitReview(tripId, targetUserId, rating, comment);
+      // Reload user to get updated rating
+      const updatedUser = await api.getCurrentUser();
+      if (updatedUser) setUser(updatedUser);
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Ошибка отправки отзыва: ' + (error as Error).message);
+    }
+  };
+
+  const handleSkipReview = async (tripId: string, targetUserId: string) => {
+    try {
+      await api.skipReview(tripId, targetUserId);
+    } catch (error) {
+      console.error('Error skipping review:', error);
+      alert('Ошибка: ' + (error as Error).message);
+    }
+  };
+
   if (!user) {
     return <Auth onLogin={handleLogin} loading={loading} />;
   }
@@ -1318,7 +1698,19 @@ export default function App() {
             }
           />
           <Route path="/create" element={<CreateTrip user={user} addTrip={addTrip} />} />
-          <Route path="/profile" element={<Profile user={user} updateUser={updateUser} onLogout={handleLogout} trips={trips} />} />
+          <Route path="/profile" element={
+              <Profile
+                user={user}
+                updateUser={updateUser}
+                onLogout={handleLogout}
+                trips={trips}
+                pendingReviews={pendingReviews}
+                userReviews={userReviews}
+                onSubmitReview={handleSubmitReview}
+                onSkipReview={handleSkipReview}
+                refreshReviews={loadReviews}
+              />
+            } />
           <Route path="/user/:userId" element={<UserProfileWrapper currentUser={user} />} />
         </Routes>
       </Layout>

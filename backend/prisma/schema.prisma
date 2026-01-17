@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -108,7 +108,7 @@ model Trip {
   isReturn        Boolean  @default(false)
   
   // Status
-  status          String   @default("active") // active, completed, cancelled
+  status          String   @default("active") // active, completed, cancelled, archived
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -137,20 +137,21 @@ model Booking {
 
 model Review {
   id        String   @id @default(cuid())
-  
+
   tripId    String
   trip      Trip     @relation(fields: [tripId], references: [id])
-  
+
   authorId  String
   author    User     @relation("ReviewAuthor", fields: [authorId], references: [id])
-  
+
   targetId  String
   target    User     @relation("ReviewTarget", fields: [targetId], references: [id])
-  
-  rating    Int      // 1-5
+
+  rating    Int      // 1-5 (0 если пропущен)
   comment   String   @default("")
-  
+  skipped   Boolean  @default(false) // true если отзыв пропущен
+
   createdAt DateTime @default(now())
-  
+
   @@unique([tripId, authorId, targetId]) // Один отзыв на поездку от автора к цели
 }
