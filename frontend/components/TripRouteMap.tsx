@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { City } from '../types';
 import { useYandexMaps } from '../services/YandexMapsProvider';
 import { CITY_BOUNDS, Coords } from '../services/yandexMapsService';
@@ -137,19 +137,31 @@ export function TripRouteMap({
   if (!hasCoords || mapError) {
     return (
       <div
-        className={`bg-gradient-to-r from-sky-50 to-pink-50 rounded-xl p-3 ${className}`}
+        className={`bg-gradient-to-r from-sky-50 to-pink-50 rounded-xl p-4 ${className}`}
         onClick={onClick}
         style={{ cursor: onClick ? 'pointer' : 'default' }}
       >
-        <div className="flex items-center gap-3 text-sm">
-          <div className="flex items-center gap-2 text-sky-600">
-            <div className="w-2 h-2 rounded-full bg-sky-400"></div>
-            <span className="truncate max-w-[120px]">{pickupLocation}</span>
+        <div className="space-y-3">
+          {/* Откуда */}
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-3 h-3 rounded-full bg-sky-400 border-2 border-white shadow"></div>
+              <div className="w-0.5 h-6 bg-gradient-to-b from-sky-300 to-pink-300"></div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-400 mb-0.5">Откуда</p>
+              <p className="text-sm text-gray-700 leading-tight">{pickupLocation}</p>
+            </div>
           </div>
-          <Navigation size={14} className="text-gray-300 flex-shrink-0" />
-          <div className="flex items-center gap-2 text-pink-600">
-            <div className="w-2 h-2 rounded-full bg-pink-400"></div>
-            <span className="truncate max-w-[120px]">{dropoffLocation}</span>
+          {/* Куда */}
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-3 h-3 rounded-full bg-pink-400 border-2 border-white shadow"></div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-400 mb-0.5">Куда</p>
+              <p className="text-sm text-gray-700 leading-tight">{dropoffLocation}</p>
+            </div>
           </div>
         </div>
       </div>
