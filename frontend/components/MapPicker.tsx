@@ -135,9 +135,10 @@ export function MapPicker({
 
         // Обработчик кликов
         const listener = new YMapListener({
-          onClick: (event: any) => {
-            const coordinates = event.coordinates;
-            if (coordinates) {
+          onClick: (object: any, event: any) => {
+            // В Yandex Maps API v3 координаты в event.coordinates
+            const coordinates = event?.coordinates;
+            if (coordinates && Array.isArray(coordinates)) {
               handleMapClick({
                 lat: coordinates[1],
                 lng: coordinates[0]
