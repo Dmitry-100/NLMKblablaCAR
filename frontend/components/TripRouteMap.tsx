@@ -41,7 +41,13 @@ export function TripRouteMap({
   const [mapError, setMapError] = useState(false);
 
   // Если нет координат, показываем fallback
-  const hasCoords = pickupCoords && dropoffCoords;
+  // Проверяем что координаты реально существуют (не undefined/null)
+  const hasCoords = !!(
+    pickupCoords?.lat != null &&
+    pickupCoords?.lng != null &&
+    dropoffCoords?.lat != null &&
+    dropoffCoords?.lng != null
+  );
 
   // Инициализация карты
   useEffect(() => {
