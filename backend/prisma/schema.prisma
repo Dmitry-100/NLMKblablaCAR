@@ -122,6 +122,13 @@ model Trip {
   // Relations
   bookings        Booking[]
   reviews         Review[]
+
+  // Indexes for query optimization
+  @@index([status])                    // Filter by status
+  @@index([driverId])                  // Driver's trips
+  @@index([date])                      // Sort/filter by date
+  @@index([status, date])              // Active trips sorted by date
+  @@index([fromCity, toCity, status])  // Route search
 }
 
 model Booking {
@@ -139,6 +146,11 @@ model Booking {
   updatedAt   DateTime @updatedAt
   
   @@unique([tripId, passengerId]) // Один пассажир - одна бронь на поездку
+
+  // Indexes for query optimization
+  @@index([passengerId])          // User's bookings
+  @@index([tripId])               // Trip's bookings
+  @@index([passengerId, status])  // User's active bookings
 }
 
 model Review {
@@ -160,4 +172,9 @@ model Review {
   createdAt DateTime @default(now())
 
   @@unique([tripId, authorId, targetId]) // Один отзыв на поездку от автора к цели
+
+  // Indexes for query optimization
+  @@index([tripId])    // Trip's reviews
+  @@index([targetId])  // Reviews about user (for rating calculation)
+  @@index([authorId])  // Reviews by user
 }
