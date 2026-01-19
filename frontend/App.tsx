@@ -993,19 +993,67 @@ const Profile = ({ user, updateUser, onLogout, trips, pendingReviews, userReview
         setIsEditing(false);
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 500000) {
-                alert('Файл слишком большой. Максимум 500KB');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setEditData({...editData, avatarUrl: reader.result as string});
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            alert('Пожалуйста, выберите изображение (JPG, PNG, etc.)');
+            return;
         }
+
+        // Max 5 MB for original file
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Файл слишком большой. Максимум 5 МБ');
+            return;
+        }
+
+        try {
+            // Compress image using canvas
+            const compressedDataUrl = await compressImage(file, 800, 0.8);
+            setEditData({...editData, avatarUrl: compressedDataUrl});
+        } catch (error) {
+            console.error('Error compressing image:', error);
+            alert('Ошибка при обработке изображения. Попробуйте другой файл.');
+        }
+    };
+
+    // Compress image to max dimension and quality
+    const compressImage = (file: File, maxSize: number, quality: number): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                // Scale down if larger than maxSize
+                if (width > maxSize || height > maxSize) {
+                    if (width > height) {
+                        height = (height / width) * maxSize;
+                        width = maxSize;
+                    } else {
+                        width = (width / height) * maxSize;
+                        height = maxSize;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Could not get canvas context'));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(dataUrl);
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = URL.createObjectURL(file);
+        });
     };
 
     const togglePreference = (key: keyof Preferences) => {
