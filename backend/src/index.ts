@@ -8,6 +8,7 @@ import usersRoutes from './routes/users.js';
 import tripsRoutes from './routes/trips.js';
 import bookingsRoutes from './routes/bookings.js';
 import reviewsRoutes from './routes/reviews.js';
+import aiRoutes from './routes/ai.js';
 
 // ============ SETUP ============
 
@@ -72,6 +73,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/trips', tripsRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // ============ ERROR HANDLING ============
 

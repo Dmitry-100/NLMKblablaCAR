@@ -1,32 +1,29 @@
-import { GoogleGenAI } from "@google/genai";
+/**
+ * AI Assistant Service
+ * Calls backend API which securely handles Gemini API key
+ */
 
-// Initialize Gemini with Vite environment variable
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export const generateAssistantResponse = async (userPrompt: string): Promise<string> => {
-  if (!ai) {
-    return "ИИ-помощник не настроен. Добавьте VITE_GEMINI_API_KEY в переменные окружения.";
-  }
-
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: userPrompt,
-      config: {
-        systemInstruction: `Ты помощник для приложения NLMKblablaCAR (корпоративный карпулинг НЛМК).
-Приложение соединяет Москву и Липецк.
-Твой тон — дружелюбный, полезный и четкий. Отвечай на русском языке.
-Ответы должны быть краткими (до 50 слов).
-Если спрашивают о погоде, давай типичный прогноз для региона.
-Если просят комментарий к поездке, предлагай дружелюбные, профессиональные варианты.
-Если спрашивают о приложении, объясни что это сервис для совместных поездок сотрудников НЛМК между Москвой и Липецком.`
-      }
+    const response = await fetch(`${API_BASE_URL}/ai/assistant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: userPrompt }),
     });
 
-    return response.text || "Извини, не расслышал. Попробуй еще раз?";
+    const data = await response.json();
+
+    if (!response.ok) {
+      return data.response || 'Связь нестабильна. Попробуйте позже.';
+    }
+
+    return data.response || 'Извини, не расслышал. Попробуй еще раз?';
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Связь нестабильна. Попробуйте позже.";
+    console.error('AI Assistant Error:', error);
+    return 'Связь нестабильна. Попробуйте позже.';
   }
 };
