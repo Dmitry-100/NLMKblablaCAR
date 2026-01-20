@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   HashRouter, Routes, Route, Link, useNavigate, useLocation, useParams
 } from 'react-router-dom';
@@ -1769,15 +1770,43 @@ const UserProfileWrapper = ({ currentUser }: { currentUser: User }) => {
 // --- Main App Logic ---
 
 export default function App() {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
-  const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tripsLoading, setTripsLoading] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
-  const [userReviews, setUserReviews] = useState<Review[]>([]);
 
-  // Initial load
+  // Fetch trips with React Query (cached, auto-refreshed)
+  const {
+    data: trips = [],
+    isLoading: tripsLoading,
+    refetch: refetchTrips
+  } = useQuery({
+    queryKey: ['trips'],
+    queryFn: () => api.getTrips(),
+    enabled: !!user,  // Only fetch when logged in
+  });
+
+  // Fetch pending reviews with React Query
+  const {
+    data: pendingReviews = [],
+    refetch: refetchPendingReviews
+  } = useQuery({
+    queryKey: ['pendingReviews'],
+    queryFn: () => api.getPendingReviews(),
+    enabled: !!user,
+  });
+
+  // Fetch user reviews with React Query
+  const {
+    data: userReviews = [],
+    refetch: refetchUserReviews
+  } = useQuery({
+    queryKey: ['userReviews', user?.id],
+    queryFn: () => api.getUserReviews(user!.id),
+    enabled: !!user,
+  });
+
+  // Initial session restore
   useEffect(() => {
     let isMounted = true;
     const restoreSession = async () => {
@@ -1797,34 +1826,12 @@ export default function App() {
     };
   }, []);
 
-  // Fetch trips and reviews when user is logged in
-  useEffect(() => {
-      if (user) {
-          loadTrips();
-          loadReviews();
-      }
-  }, [user]);
-
-  const loadTrips = async () => {
-      setTripsLoading(true);
-      const data = await api.getTrips();
-      setTrips(data);
-      setTripsLoading(false);
-  }
-
-  const loadReviews = async () => {
-      if (!user) return;
-      try {
-          const [pending, reviews] = await Promise.all([
-              api.getPendingReviews(),
-              api.getUserReviews(user.id)
-          ]);
-          setPendingReviews(pending);
-          setUserReviews(reviews);
-      } catch (error) {
-          console.error('Error loading reviews:', error);
-      }
-  }
+  // Helper to refresh all data
+  const refreshAllData = () => {
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingReviews'] });
+    queryClient.invalidateQueries({ queryKey: ['userReviews'] });
+  };
 
   const handleLogin = async (email: string) => {
     setLoading(true);
@@ -1836,7 +1843,7 @@ export default function App() {
   const handleLogout = () => {
       api.logout();
       setUser(null);
-      setTrips([]);
+      queryClient.clear();  // Clear all cached data on logout
   }
 
   const addTrip = async (newTrips: Trip[]) => {
@@ -1844,7 +1851,7 @@ export default function App() {
       for (const trip of newTrips) {
         await api.createTrip(trip);
       }
-      await loadTrips();
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
     } catch (error) {
       console.error('Error creating trip:', error);
       alert('Ошибка создания поездки: ' + (error as Error).message);
@@ -1859,7 +1866,7 @@ export default function App() {
   const joinTrip = async (tripId: string) => {
     try {
       await api.bookTrip(tripId);
-      await loadTrips();
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
       alert("Вы присоединились к поездке!");
     } catch (error) {
       console.error('Error joining trip:', error);
@@ -1870,7 +1877,7 @@ export default function App() {
   const deleteTrip = async (tripId: string) => {
     try {
       await api.cancelTrip(tripId);
-      await loadTrips();
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
       alert("Поездка отменена");
     } catch (error) {
       console.error('Error deleting trip:', error);
@@ -1881,7 +1888,7 @@ export default function App() {
   const cancelBooking = async (bookingId: string) => {
     try {
       await api.cancelBooking(bookingId);
-      await loadTrips();
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
       alert("Бронирование отменено");
     } catch (error) {
       console.error('Error cancelling booking:', error);
@@ -1896,7 +1903,7 @@ export default function App() {
   const handleSaveTrip = async (updatedTrip: Trip) => {
     try {
       await api.updateTrip(updatedTrip);
-      await loadTrips();
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
       setEditingTrip(null);
       alert("Поездка обновлена");
     } catch (error) {
@@ -1960,7 +1967,7 @@ export default function App() {
                 userReviews={userReviews}
                 onSubmitReview={handleSubmitReview}
                 onSkipReview={handleSkipReview}
-                refreshReviews={loadReviews}
+                refreshReviews={refreshAllData}
               />
             } />
           <Route path="/user/:userId" element={<UserProfileWrapper currentUser={user} />} />
