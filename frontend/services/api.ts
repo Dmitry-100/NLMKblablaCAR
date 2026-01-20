@@ -1,6 +1,6 @@
 /**
  * API Client для NLMKblablaCAR
- * Подключается к реальному бэкенду вместо localStorage
+ * Подключается к реальному бэкенду с поддержкой refresh tokens
  */
 
 import { Trip, User, Review, PendingReview } from '../types';
@@ -9,53 +9,131 @@ import { Trip, User, Review, PendingReview } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Токен хранится в localStorage
-const TOKEN_KEY = 'nlmk_auth_token';
+// Токены хранятся в localStorage
+const ACCESS_TOKEN_KEY = 'nlmk_access_token';
+const REFRESH_TOKEN_KEY = 'nlmk_refresh_token';
 
-// ============ HELPERS ============
+// Флаг для предотвращения параллельных refresh запросов
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
 
+// ============ TOKEN HELPERS ============
+
+function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+function removeTokens(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+// Legacy support
 function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return getAccessToken();
 }
 
 function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(ACCESS_TOKEN_KEY, token);
 }
 
 function removeToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  removeTokens();
 }
+
+// ============ TOKEN REFRESH ============
+
+async function refreshTokens(): Promise<boolean> {
+  // If already refreshing, wait for that promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return false;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        removeTokens();
+        return false;
+      }
+
+      const data = await response.json();
+      setTokens(data.accessToken, data.refreshToken);
+      return true;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      removeTokens();
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+// ============ REQUEST HELPER ============
 
 async function request<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryOnUnauthorized = true
 ): Promise<T> {
-  const token = getToken();
-  
+  const token = getAccessToken();
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
   });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    // Если токен невалидный - разлогиниваем
-    if (response.status === 401) {
-      removeToken();
+
+  // Handle 401 - try to refresh token
+  if (response.status === 401 && retryOnUnauthorized) {
+    const refreshed = await refreshTokens();
+    if (refreshed) {
+      // Retry the request with new token
+      return request<T>(endpoint, options, false);
     }
+    // Refresh failed - user needs to login again
+    removeTokens();
+    throw new Error('Сессия истекла. Войдите снова.');
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
     throw new Error(data.error || 'Ошибка запроса');
   }
-  
+
   return data;
 }
 
@@ -63,53 +141,62 @@ async function request<T>(
 
 export const api = {
   // --- AUTH ---
-  
+
   /**
    * Авторизация по email
-   * Возвращает пользователя и сохраняет токен
+   * Возвращает пользователя и сохраняет токены
    */
   async login(email: string): Promise<User> {
-    const { token, user } = await request<{ token: string; user: User }>('/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
-    
-    setToken(token);
-    return user;
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Ошибка авторизации');
+    }
+
+    // Save both tokens
+    setTokens(data.accessToken, data.refreshToken);
+    return data.user;
   },
-  
+
   /**
    * Получить текущего пользователя по токену
    */
   async getCurrentUser(): Promise<User | null> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return null;
-    
+
     try {
       const { user } = await request<{ user: User }>('/auth/me');
       return user;
     } catch (error) {
-      removeToken();
+      // Token invalid and refresh failed
+      removeTokens();
       return null;
     }
   },
-  
+
   /**
    * Выйти из аккаунта
    */
   logout(): void {
-    removeToken();
+    removeTokens();
   },
-  
+
   /**
    * Проверить, авторизован ли пользователь
    */
   isAuthenticated(): boolean {
-    return !!getToken();
+    return !!getAccessToken() || !!getRefreshToken();
   },
-  
+
   // --- USERS ---
-  
+
   /**
    * Получить пользователя (для совместимости с текущим кодом)
    * @deprecated Используйте login() вместо этого
@@ -117,7 +204,7 @@ export const api = {
   async getUser(email: string): Promise<User> {
     return this.login(email);
   },
-  
+
   /**
    * Обновить профиль пользователя
    */
@@ -145,9 +232,9 @@ export const api = {
     const { user } = await request<{ user: User }>(`/users/${userId}`);
     return user;
   },
-  
+
   // --- TRIPS ---
-  
+
   /**
    * Получить список поездок
    */
@@ -162,14 +249,14 @@ export const api = {
     if (filters?.to) params.set('to', filters.to);
     if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
     if (filters?.dateTo) params.set('dateTo', filters.dateTo);
-    
+
     const query = params.toString();
     const endpoint = query ? `/trips?${query}` : '/trips';
-    
+
     const { trips } = await request<{ trips: Trip[] }>(endpoint);
     return trips;
   },
-  
+
   /**
    * Получить детали поездки
    */
@@ -177,7 +264,7 @@ export const api = {
     const { trip } = await request<{ trip: Trip }>(`/trips/${id}`);
     return trip;
   },
-  
+
   /**
    * Создать новую поездку
    */
@@ -204,7 +291,7 @@ export const api = {
     });
     return createdTrip;
   },
-  
+
   /**
    * Обновить поездку
    */
@@ -229,7 +316,7 @@ export const api = {
     });
     return updatedTrip;
   },
-  
+
   /**
    * Отменить поездку
    */
@@ -238,9 +325,9 @@ export const api = {
       method: 'DELETE',
     });
   },
-  
+
   // --- BOOKINGS ---
-  
+
   /**
    * Забронировать место в поездке
    */
@@ -250,7 +337,7 @@ export const api = {
       body: JSON.stringify({ tripId }),
     });
   },
-  
+
   /**
    * Получить мои бронирования
    */
@@ -258,7 +345,7 @@ export const api = {
     const { bookings } = await request<{ bookings: any[] }>('/bookings/my');
     return bookings;
   },
-  
+
   /**
    * Отменить бронирование
    */
@@ -310,5 +397,5 @@ export const api = {
 
 // ============ EXPORTS ============
 
-export { getToken, setToken, removeToken };
+export { getToken, setToken, removeToken, getAccessToken, getRefreshToken };
 export default api;

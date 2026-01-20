@@ -1,7 +1,12 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { generateToken, authMiddleware } from '../middleware/auth.js';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  authMiddleware
+} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -50,12 +55,14 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
     
-    // Генерируем токен
-    const token = generateToken(user.id, user.email);
-    
-    // Возвращаем пользователя и токен
+    // Генерируем токены
+    const accessToken = generateAccessToken(user.id, user.email);
+    const refreshToken = generateRefreshToken(user.id);
+
+    // Возвращаем пользователя и токены
     res.json({
-      token,
+      accessToken,
+      refreshToken,
       user: formatUserResponse(user)
     });
     
@@ -96,10 +103,12 @@ router.post('/register', async (req: Request, res: Response) => {
       }
     });
     
-    const token = generateToken(user.id, user.email);
-    
+    const accessToken = generateAccessToken(user.id, user.email);
+    const refreshToken = generateRefreshToken(user.id);
+
     res.status(201).json({
-      token,
+      accessToken,
+      refreshToken,
       user: formatUserResponse(user)
     });
     
@@ -131,6 +140,49 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Get me error:', error);
     res.status(500).json({ error: 'Ошибка получения профиля' });
+  }
+});
+
+/**
+ * POST /api/auth/refresh
+ * Обновить access token используя refresh token
+ */
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token обязателен' });
+    }
+
+    // Verify refresh token
+    const userId = verifyRefreshToken(refreshToken);
+    if (!userId) {
+      return res.status(401).json({ error: 'Недействительный refresh token' });
+    }
+
+    // Get user from DB
+    const user = await req.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Пользователь не найден' });
+    }
+
+    // Generate new tokens
+    const newAccessToken = generateAccessToken(user.id, user.email);
+    const newRefreshToken = generateRefreshToken(user.id);
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      user: formatUserResponse(user)
+    });
+
+  } catch (error) {
+    console.error('Refresh error:', error);
+    res.status(500).json({ error: 'Ошибка обновления токена' });
   }
 });
 
