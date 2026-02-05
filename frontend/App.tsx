@@ -553,7 +553,7 @@ const CreateTrip = ({ user, addTrip }: { user: User, addTrip: (t: Trip[]) => Pro
                 </div>
             )}
 
-            <div className="fixed bottom-0 left-0 w-full p-4 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-center z-40">
+            <div className="fixed bottom-0 left-0 w-full p-4 md:pb-4 pb-20 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-center z-[60]">
                 <Button onClick={handleSubmit} className="w-full max-w-md shadow-xl shadow-sky-200/50" loading={isSubmitting}>
                     Опубликовать
                 </Button>
