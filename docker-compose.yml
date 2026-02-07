@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nlmkblablacar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nlmkblablacar_local
+      POSTGRES_USER: nlmk
+      POSTGRES_PASSWORD: nlmk_local_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - nlmkblablacar_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nlmk -d nlmkblablacar_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  nlmkblablacar_postgres_data:

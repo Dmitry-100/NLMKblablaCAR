@@ -97,9 +97,12 @@ app.use((req, res) => {
  */
 async function archivePastTrips() {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    // Формируем локальную дату в формате YYYY-MM-DD без UTC сдвигов.
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
 
     const result = await prisma.trip.updateMany({
       where: {

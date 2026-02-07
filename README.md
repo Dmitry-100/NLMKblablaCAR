@@ -533,7 +533,17 @@ Tailwind CSS с кастомной конфигурацией:
 
 ### Локальная разработка
 
-#### 1. Backend Setup
+#### 1. Поднять локальную PostgreSQL (Docker)
+
+```bash
+# из корня проекта
+docker compose up -d postgres
+docker compose ps
+```
+
+PostgreSQL будет доступна на `localhost:5433`.
+
+#### 2. Backend Setup
 
 ```bash
 cd backend
@@ -541,22 +551,21 @@ cd backend
 # Установка зависимостей
 npm install
 
-# Настройка .env
-echo 'DATABASE_URL="postgresql://user:password@localhost:5432/nlmkblablacar"' > .env
-echo 'JWT_SECRET="your-super-secret-key"' >> .env
+# Локальные переменные окружения
+cp .env.local.example .env.local
 
 # Создание БД и таблиц
-npx prisma db push
+npm run db:push:local
 
 # Генерация Prisma Client
-npx prisma generate
+npm run db:generate:local
 
 # Запуск dev сервера
-npm run dev
+npm run dev:local
 # Server: http://localhost:3001
 ```
 
-#### 2. Frontend Setup
+#### 3. Frontend Setup
 
 ```bash
 cd frontend
@@ -567,25 +576,27 @@ npm install
 # Настройка .env.local
 echo 'VITE_API_URL=http://localhost:3001/api' > .env.local
 echo 'VITE_YANDEX_MAPS_API_KEY=your-yandex-maps-key' >> .env.local
-echo 'VITE_GEMINI_API_KEY=your-gemini-key' >> .env.local
 
 # Запуск dev сервера
 npm run dev
-# App: http://localhost:3000
+# App: http://localhost:5173
 ```
 
 **Получение API ключей:**
 - **Яндекс.Карты:** https://developer.tech.yandex.ru/ → Создать проект → JavaScript API
 - **Google Gemini (бесплатно):** https://aistudio.google.com/app/apikey
+  - Ключ задается на backend в `backend/.env.local` как `GEMINI_API_KEY`
 
 ### Доступные команды
 
 #### Backend
 ```bash
 npm run dev       # Запуск dev сервера с hot-reload
+npm run dev:local # Запуск dev с переменными из .env.local
 npm run build     # Компиляция TypeScript в dist/
 npm start         # Запуск production сервера
 npm run db:push   # Применить схему к БД
+npm run db:push:local # Применить схему к локальной БД из .env.local
 npm run db:studio # Открыть Prisma Studio (GUI для БД)
 ```
 

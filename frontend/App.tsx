@@ -1833,11 +1833,21 @@ export default function App() {
     queryClient.invalidateQueries({ queryKey: ['userReviews'] });
   };
 
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+  };
+
   const handleLogin = async (email: string) => {
     setLoading(true);
-    const u = await api.login(email);
-    setUser(u);
-    setLoading(false);
+    try {
+      const u = await api.login(email);
+      setUser(u);
+    } catch (error) {
+      alert(`Ошибка входа: ${getErrorMessage(error, 'не удалось войти')}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -1854,13 +1864,17 @@ export default function App() {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
     } catch (error) {
       console.error('Error creating trip:', error);
-      alert('Ошибка создания поездки: ' + (error as Error).message);
+      alert(`Ошибка создания поездки: ${getErrorMessage(error, 'не удалось создать поездку')}`);
     }
   };
 
   const updateUser = async (updatedUser: User) => {
+    try {
       const savedUser = await api.updateUser(updatedUser);
       setUser(savedUser);
+    } catch (error) {
+      alert(`Ошибка обновления профиля: ${getErrorMessage(error, 'не удалось сохранить профиль')}`);
+    }
   };
 
   const joinTrip = async (tripId: string) => {
@@ -1870,7 +1884,7 @@ export default function App() {
       alert("Вы присоединились к поездке!");
     } catch (error) {
       console.error('Error joining trip:', error);
-      alert('Ошибка бронирования: ' + (error as Error).message);
+      alert(`Ошибка бронирования: ${getErrorMessage(error, 'не удалось забронировать поездку')}`);
     }
   };
 
@@ -1881,7 +1895,7 @@ export default function App() {
       alert("Поездка отменена");
     } catch (error) {
       console.error('Error deleting trip:', error);
-      alert('Ошибка отмены: ' + (error as Error).message);
+      alert(`Ошибка отмены: ${getErrorMessage(error, 'не удалось отменить поездку')}`);
     }
   };
 
@@ -1892,7 +1906,7 @@ export default function App() {
       alert("Бронирование отменено");
     } catch (error) {
       console.error('Error cancelling booking:', error);
-      alert('Ошибка отмены бронирования: ' + (error as Error).message);
+      alert(`Ошибка отмены бронирования: ${getErrorMessage(error, 'не удалось отменить бронирование')}`);
     }
   };
 
@@ -1908,7 +1922,7 @@ export default function App() {
       alert("Поездка обновлена");
     } catch (error) {
       console.error('Error updating trip:', error);
-      alert('Ошибка обновления: ' + (error as Error).message);
+      alert(`Ошибка обновления: ${getErrorMessage(error, 'не удалось обновить поездку')}`);
     }
   };
 
@@ -1920,7 +1934,7 @@ export default function App() {
       if (updatedUser) setUser(updatedUser);
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Ошибка отправки отзыва: ' + (error as Error).message);
+      alert(`Ошибка отправки отзыва: ${getErrorMessage(error, 'не удалось отправить отзыв')}`);
     }
   };
 
@@ -1929,7 +1943,7 @@ export default function App() {
       await api.skipReview(tripId, targetUserId);
     } catch (error) {
       console.error('Error skipping review:', error);
-      alert('Ошибка: ' + (error as Error).message);
+      alert(`Ошибка: ${getErrorMessage(error, 'не удалось пропустить отзыв')}`);
     }
   };
 

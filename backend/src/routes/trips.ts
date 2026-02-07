@@ -40,8 +40,35 @@ const querySchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   status: z.enum(['active', 'completed', 'cancelled', 'archived']).optional(),
-  includeArchived: z.string().optional() // 'true' для включения archived
+  includeArchived: z.enum(['true', 'false']).optional()
 });
+
+function ensureLocationCoordsPair(
+  lat: number | undefined,
+  lng: number | undefined,
+  fieldLabel: string
+) {
+  if ((lat === undefined) !== (lng === undefined)) {
+    throw new z.ZodError([{
+      code: z.ZodIssueCode.custom,
+      message: `${fieldLabel}: нужно передать и lat, и lng`,
+      path: []
+    }]);
+  }
+}
+
+function ensureTripDateIsNotPast(date: string, time: string) {
+  const tripDate = new Date(`${date}T${time}`);
+  const now = new Date();
+
+  if (tripDate.getTime() < now.getTime()) {
+    throw new z.ZodError([{
+      code: z.ZodIssueCode.custom,
+      message: 'Нельзя создать или обновить поездку в прошлом',
+      path: []
+    }]);
+  }
+}
 
 // ============ ROUTES ============
 
@@ -57,10 +84,13 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
     const where: any = {};
 
     // Логика статусов:
-    // - Если указан конкретный статус — фильтруем по нему
-    // - По умолчанию показываем только 'active' (не archived, не completed, не cancelled)
+    // - Если указан конкретный status — фильтруем по нему
+    // - Если includeArchived=true — показываем active + archived
+    // - Иначе по умолчанию только active
     if (query.status) {
       where.status = query.status;
+    } else if (query.includeArchived === 'true') {
+      where.status = { in: ['active', 'archived'] };
     } else {
       where.status = 'active';
     }
@@ -137,12 +167,13 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const data = createTripSchema.parse(req.body);
 
-    // Проверяем, что дата поездки не в прошлом
-    const tripDate = new Date(data.date + 'T' + data.time);
-    const now = new Date();
-    if (tripDate < now) {
-      return res.status(400).json({ error: 'Нельзя создать поездку в прошлом' });
+    if (data.from === data.to) {
+      return res.status(400).json({ error: 'Город отправления и назначения должны отличаться' });
     }
+
+    ensureLocationCoordsPair(data.pickupLat, data.pickupLng, 'pickup');
+    ensureLocationCoordsPair(data.dropoffLat, data.dropoffLng, 'dropoff');
+    ensureTripDateIsNotPast(data.date, data.time);
 
     // Получаем пользователя для копирования preferences
     const user = await req.prisma.user.findUnique({
@@ -216,6 +247,29 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     }
     
     const data = updateTripSchema.parse(req.body);
+
+    const nextFrom = data.from ?? trip.fromCity;
+    const nextTo = data.to ?? trip.toCity;
+    const nextDate = data.date ?? trip.date;
+    const nextTime = data.time ?? trip.time;
+    const nextPickupLat = data.pickupLat ?? trip.pickupLat ?? undefined;
+    const nextPickupLng = data.pickupLng ?? trip.pickupLng ?? undefined;
+    const nextDropoffLat = data.dropoffLat ?? trip.dropoffLat ?? undefined;
+    const nextDropoffLng = data.dropoffLng ?? trip.dropoffLng ?? undefined;
+
+    if (nextFrom === nextTo) {
+      return res.status(400).json({ error: 'Город отправления и назначения должны отличаться' });
+    }
+
+    ensureLocationCoordsPair(nextPickupLat, nextPickupLng, 'pickup');
+    ensureLocationCoordsPair(nextDropoffLat, nextDropoffLng, 'dropoff');
+    ensureTripDateIsNotPast(nextDate, nextTime);
+
+    if (data.seatsTotal !== undefined && data.seatsTotal < trip.seatsBooked + 1) {
+      return res.status(400).json({
+        error: `Нельзя установить ${data.seatsTotal} мест(а): уже забронировано ${trip.seatsBooked}. Нужно минимум ${trip.seatsBooked + 1} (включая водителя)`
+      });
+    }
     
     // Формируем объект обновления
     const updateData: any = {};
@@ -231,7 +285,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     if (data.pickupLng !== undefined) updateData.pickupLng = data.pickupLng;
     if (data.dropoffLat !== undefined) updateData.dropoffLat = data.dropoffLat;
     if (data.dropoffLng !== undefined) updateData.dropoffLng = data.dropoffLng;
-    if (data.seatsTotal) updateData.seatsTotal = data.seatsTotal;
+    if (data.seatsTotal !== undefined) updateData.seatsTotal = data.seatsTotal;
     if (data.comment !== undefined) updateData.comment = data.comment;
     
     if (data.preferences) {

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -10,6 +11,15 @@ const createBookingSchema = z.object({
   tripId: z.string().min(1, 'Укажите ID поездки')
 });
 
+class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 // ============ ROUTES ============
 
 /**
@@ -19,71 +29,79 @@ const createBookingSchema = z.object({
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { tripId } = createBookingSchema.parse(req.body);
-    
-    // Получаем поездку
-    const trip = await req.prisma.trip.findUnique({
-      where: { id: tripId },
-      include: {
-        bookings: {
-          where: { status: 'confirmed' }
+
+    const booking = await req.prisma.$transaction(async (tx) => {
+      const trip = await tx.trip.findUnique({
+        where: { id: tripId },
+      });
+
+      if (!trip) {
+        throw new ApiError(404, 'Поездка не найдена');
+      }
+
+      if (trip.status !== 'active') {
+        throw new ApiError(400, 'Поездка недоступна для бронирования');
+      }
+
+      if (trip.driverId === req.userId) {
+        throw new ApiError(400, 'Нельзя забронировать место в своей поездке');
+      }
+
+      const existingBooking = await tx.booking.findFirst({
+        where: {
+          tripId,
+          passengerId: req.userId,
+          status: { not: 'cancelled' }
         }
+      });
+
+      if (existingBooking) {
+        throw new ApiError(400, 'Вы уже забронировали место в этой поездке');
       }
-    });
-    
-    if (!trip) {
-      return res.status(404).json({ error: 'Поездка не найдена' });
-    }
-    
-    if (trip.status !== 'active') {
-      return res.status(400).json({ error: 'Поездка недоступна для бронирования' });
-    }
-    
-    // Проверяем, не водитель ли это
-    if (trip.driverId === req.userId) {
-      return res.status(400).json({ error: 'Нельзя забронировать место в своей поездке' });
-    }
-    
-    // Проверяем, не забронировано ли уже
-    const existingBooking = await req.prisma.booking.findFirst({
-      where: {
-        tripId,
-        passengerId: req.userId,
-        status: { not: 'cancelled' }
+
+      const maxPassengers = Math.max(0, trip.seatsTotal - 1);
+      if (trip.seatsBooked >= maxPassengers) {
+        throw new ApiError(400, 'Нет свободных мест');
       }
-    });
-    
-    if (existingBooking) {
-      return res.status(400).json({ error: 'Вы уже забронировали место в этой поездке' });
-    }
-    
-    // Проверяем доступные места (места считаются вместе с водителем)
-    const maxPassengers = Math.max(0, trip.seatsTotal - 1);
-    const currentBookings = trip.bookings.length;
-    
-    if (currentBookings >= maxPassengers) {
-      return res.status(400).json({ error: 'Нет свободных мест' });
-    }
-    
-    // Создаём бронирование
-    const booking = await req.prisma.booking.create({
-      data: {
-        tripId,
-        passengerId: req.userId!,
-        status: 'confirmed'
-      },
-      include: {
-        trip: {
-          include: { driver: true }
+
+      const createdBooking = await tx.booking.create({
+        data: {
+          tripId,
+          passengerId: req.userId!,
+          status: 'confirmed'
         },
-        passenger: true
+      });
+
+      const tripUpdate = await tx.trip.updateMany({
+        where: {
+          id: tripId,
+          status: 'active',
+          seatsBooked: trip.seatsBooked
+        },
+        data: { seatsBooked: { increment: 1 } }
+      });
+
+      // Если строка не обновилась, кто-то уже занял место параллельно.
+      if (tripUpdate.count === 0) {
+        throw new ApiError(409, 'Место уже занято. Обновите список поездок и попробуйте снова');
       }
+
+      return tx.booking.findUnique({
+        where: { id: createdBooking.id },
+        include: {
+          trip: {
+            include: { driver: true }
+          },
+          passenger: true
+        }
+      });
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
     });
-    
-    // Обновляем счётчик мест
-    await req.prisma.trip.update({
-      where: { id: tripId },
-      data: { seatsBooked: { increment: 1 } }
-    });
+
+    if (!booking) {
+      throw new ApiError(500, 'Не удалось создать бронирование');
+    }
     
     res.status(201).json({ 
       booking: formatBookingResponse(booking),
@@ -93,6 +111,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
+    }
+    if (error instanceof ApiError) {
+      return res.status(error.status).json({ error: error.message });
     }
     console.error('Create booking error:', error);
     res.status(500).json({ error: 'Ошибка бронирования' });
@@ -162,39 +183,53 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
  */
 router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const booking = await req.prisma.booking.findUnique({
-      where: { id: req.params.id },
-      include: { trip: true }
-    });
-    
-    if (!booking) {
-      return res.status(404).json({ error: 'Бронирование не найдено' });
-    }
-    
-    // Проверяем, что это пассажир или водитель
-    if (booking.passengerId !== req.userId && booking.trip.driverId !== req.userId) {
-      return res.status(403).json({ error: 'Нет прав на отмену этого бронирования' });
-    }
-    
-    if (booking.status === 'cancelled') {
-      return res.status(400).json({ error: 'Бронирование уже отменено' });
-    }
-    
-    // Отменяем бронирование
-    await req.prisma.booking.update({
-      where: { id: req.params.id },
-      data: { status: 'cancelled' }
-    });
-    
-    // Уменьшаем счётчик мест
-    await req.prisma.trip.update({
-      where: { id: booking.tripId },
-      data: { seatsBooked: { decrement: 1 } }
+    await req.prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id: req.params.id },
+        include: { trip: true }
+      });
+
+      if (!booking) {
+        throw new ApiError(404, 'Бронирование не найдено');
+      }
+
+      if (booking.passengerId !== req.userId && booking.trip.driverId !== req.userId) {
+        throw new ApiError(403, 'Нет прав на отмену этого бронирования');
+      }
+
+      if (booking.status === 'cancelled') {
+        throw new ApiError(400, 'Бронирование уже отменено');
+      }
+
+      const bookingUpdate = await tx.booking.updateMany({
+        where: {
+          id: req.params.id,
+          status: { not: 'cancelled' }
+        },
+        data: { status: 'cancelled' }
+      });
+
+      if (bookingUpdate.count === 0) {
+        throw new ApiError(409, 'Бронирование уже было отменено');
+      }
+
+      await tx.trip.updateMany({
+        where: {
+          id: booking.tripId,
+          seatsBooked: { gt: 0 }
+        },
+        data: { seatsBooked: { decrement: 1 } }
+      });
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
     });
     
     res.json({ success: true, message: 'Бронирование отменено' });
     
   } catch (error) {
+    if (error instanceof ApiError) {
+      return res.status(error.status).json({ error: error.message });
+    }
     console.error('Cancel booking error:', error);
     res.status(500).json({ error: 'Ошибка отмены бронирования' });
   }
