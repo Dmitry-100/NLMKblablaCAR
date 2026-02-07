@@ -4,6 +4,19 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
 
+## [2.6.2] - 2026-02-07
+
+### Changed
+- **Архитектурный рефакторинг**: App.tsx декомпозирован с ~2800 до 308 строк
+- Новая feature-based структура компонентов:
+  - `features/trips/` — Schedule, CreateTrip, EditTripModal, TripList
+  - `features/requests/` — CreateRequest, RequestCard, RequestsList
+  - `features/profile/` — ProfilePage, ReviewModal, UserProfileWrapper
+  - `features/layout/` — AppLayout
+- Все 45 ESLint предупреждений исправлены (lint: 0 ошибок, 0 предупреждений)
+- Удалены неиспользуемые импорты и переменные
+- Исправлены паттерны `Date.now()` и `setState` в useEffect
+
 ## [2.6.1] - 2026-02-07
 
 ### Fixed
@@ -13,14 +26,6 @@
 - **ESLint миграция**: Обновлена конфигурация ESLint на flat config формат (ESLint 9.x)
 - Удалены устаревшие `.eslintrc.cjs` файлы
 - Backend: добавлен `"type": "module"` в package.json
-- Frontend: установлен порог предупреждений 50 для CI
-
-### Tech Debt
-Документированы следующие пункты технического долга:
-- `App.tsx` (~2800 строк) - требуется декомпозиция на отдельные модули
-- `Date.now()` в render - нарушает чистоту компонентов React
-- Паттерны `setState` в useEffect - требуют рефакторинга
-- Неиспользуемые переменные и `any` типы (45 предупреждений)
 
 ## [2.6.0] - 2026-02-07
 
