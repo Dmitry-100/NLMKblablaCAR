@@ -29,7 +29,7 @@ export function LocationInput({
   placeholder = 'Введите адрес',
   label,
   required = false,
-  onOpenMap
+  onOpenMap,
 }: LocationInputProps) {
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState<SuggestItem[]>([]);
@@ -47,24 +47,27 @@ export function LocationInput({
   }, [value]);
 
   // Debounced search
-  const handleSearch = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+  const handleSearch = useCallback(
+    async (query: string) => {
+      if (query.length < 2) {
+        setSuggestions([]);
+        return;
+      }
 
-    setIsLoading(true);
-    try {
-      const results = await searchAddress(query, city);
-      setSuggestions(results);
-      setSelectedIndex(-1);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [city]);
+      setIsLoading(true);
+      try {
+        const results = await searchAddress(query, city);
+        setSuggestions(results);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [city]
+  );
 
   // Обработка изменения ввода
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +100,7 @@ export function LocationInput({
     onChange({
       address: suggestion.title,
       lat: suggestion.coords?.lat,
-      lng: suggestion.coords?.lng
+      lng: suggestion.coords?.lng,
     });
   };
 
@@ -116,15 +119,11 @@ export function LocationInput({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev =>
-          prev < suggestions.length - 1 ? prev + 1 : 0
-        );
+        setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev =>
-          prev > 0 ? prev - 1 : suggestions.length - 1
-        );
+        setSelectedIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
         break;
       case 'Enter':
         e.preventDefault();
@@ -197,9 +196,7 @@ export function LocationInput({
 
         {/* Кнопки справа */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {isLoading && (
-            <Loader2 size={16} className="animate-spin text-gray-400" />
-          )}
+          {isLoading && <Loader2 size={16} className="animate-spin text-gray-400" />}
 
           {inputValue && !isLoading && (
             <button
@@ -240,13 +237,9 @@ export function LocationInput({
             >
               <MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
               <div className="min-w-0">
-                <div className="text-sm text-gray-800 truncate">
-                  {suggestion.title}
-                </div>
+                <div className="text-sm text-gray-800 truncate">{suggestion.title}</div>
                 {suggestion.subtitle && (
-                  <div className="text-xs text-gray-400 truncate">
-                    {suggestion.subtitle}
-                  </div>
+                  <div className="text-xs text-gray-400 truncate">{suggestion.subtitle}</div>
                 )}
               </div>
             </button>

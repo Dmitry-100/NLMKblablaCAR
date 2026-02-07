@@ -32,15 +32,24 @@ export interface RouteData {
 
 // ============ CITY BOUNDS ============
 
-export const CITY_BOUNDS: Record<City, { center: [number, number]; bounds: [[number, number], [number, number]] }> = {
+export const CITY_BOUNDS: Record<
+  City,
+  { center: [number, number]; bounds: [[number, number], [number, number]] }
+> = {
   [City.Moscow]: {
     center: [55.7558, 37.6173],
-    bounds: [[55.4, 37.0], [56.0, 38.0]]
+    bounds: [
+      [55.4, 37.0],
+      [56.0, 38.0],
+    ],
   },
   [City.Lipetsk]: {
     center: [52.6031, 39.5708],
-    bounds: [[52.4, 39.3], [52.8, 39.9]]
-  }
+    bounds: [
+      [52.4, 39.3],
+      [52.8, 39.9],
+    ],
+  },
 };
 
 // ============ STATE ============
@@ -162,10 +171,12 @@ export async function searchAddress(query: string, city: City): Promise<SuggestI
       return {
         title: geoObject.name || geoObject.metaDataProperty?.GeocoderMetaData?.text,
         subtitle: geoObject.description,
-        coords: point ? {
-          lng: parseFloat(point[0]),
-          lat: parseFloat(point[1])
-        } : undefined
+        coords: point
+          ? {
+              lng: parseFloat(point[0]),
+              lat: parseFloat(point[1]),
+            }
+          : undefined,
       };
     });
   } catch (error) {
@@ -232,7 +243,10 @@ export async function getRoute(from: Coords, to: Coords): Promise<RouteData | nu
       return {
         distance: calculateDistance(from, to),
         duration: 0,
-        coordinates: [[from.lng, from.lat], [to.lng, to.lat]]
+        coordinates: [
+          [from.lng, from.lat],
+          [to.lng, to.lat],
+        ],
       };
     }
 
@@ -243,9 +257,10 @@ export async function getRoute(from: Coords, to: Coords): Promise<RouteData | nu
       return {
         distance: route.length?.value || 0,
         duration: route.duration?.value || 0,
-        coordinates: route.steps?.flatMap((step: any) =>
-          step.polyline?.coordinates || []
-        ) || [[from.lng, from.lat], [to.lng, to.lat]]
+        coordinates: route.steps?.flatMap((step: any) => step.polyline?.coordinates || []) || [
+          [from.lng, from.lat],
+          [to.lng, to.lat],
+        ],
       };
     }
 
@@ -256,7 +271,10 @@ export async function getRoute(from: Coords, to: Coords): Promise<RouteData | nu
     return {
       distance: calculateDistance(from, to),
       duration: 0,
-      coordinates: [[from.lng, from.lat], [to.lng, to.lat]]
+      coordinates: [
+        [from.lng, from.lat],
+        [to.lng, to.lat],
+      ],
     };
   }
 }
@@ -270,8 +288,7 @@ function calculateDistance(from: Coords, to: Coords): number {
   const dLng = toRad(to.lng - from.lng);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(from.lat)) * Math.cos(toRad(to.lat)) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    Math.cos(toRad(from.lat)) * Math.cos(toRad(to.lat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -290,7 +307,7 @@ export const yandexMapsService = {
   searchAddress,
   getAddressFromCoords,
   getRoute,
-  CITY_BOUNDS
+  CITY_BOUNDS,
 };
 
 export default yandexMapsService;

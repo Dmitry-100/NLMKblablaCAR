@@ -1,29 +1,29 @@
 export enum City {
   Moscow = 'Moscow',
-  Lipetsk = 'Lipetsk'
+  Lipetsk = 'Lipetsk',
 }
 
 export enum Role {
   Driver = 'Driver',
   Passenger = 'Passenger',
-  Both = 'Both'
+  Both = 'Both',
 }
 
 export enum MusicPref {
   Quiet = 'Quiet',
   Normal = 'Normal',
-  Loud = 'Loud'
+  Loud = 'Loud',
 }
 
 export enum BaggageSize {
   Hand = 'Hand',
   Medium = 'Medium',
-  Suitcase = 'Suitcase'
+  Suitcase = 'Suitcase',
 }
 
 export enum ConversationPref {
   Chatty = 'Chatty',
-  Quiet = 'Quiet'
+  Quiet = 'Quiet',
 }
 
 export interface Preferences {
@@ -59,7 +59,7 @@ export interface Trip {
   time: string; // HH:mm
   pickupLocation: string;
   dropoffLocation: string;
-  pickupLat?: number;  // Координаты места посадки
+  pickupLat?: number; // Координаты места посадки
   pickupLng?: number;
   dropoffLat?: number; // Координаты места высадки
   dropoffLng?: number;
@@ -98,4 +98,38 @@ export interface PendingReview {
     driver: User;
   };
   pendingFor: User[]; // Users who haven't been reviewed yet
+}
+
+// ============ PASSENGER REQUESTS ============
+
+export type RequestStatus = 'pending' | 'fulfilled' | 'cancelled' | 'expired';
+
+export interface PassengerRequest {
+  id: string;
+  requesterId: string;
+  requester: User;
+  from: City;
+  to: City;
+  dateFrom: string; // YYYY-MM-DD
+  dateTo: string; // YYYY-MM-DD
+  timePreferred?: string; // HH:mm
+  passengersCount: number;
+  preferences: Preferences;
+  comment: string;
+  status: RequestStatus;
+  linkedTripId?: string;
+  linkedTrip?: {
+    id: string;
+    date: string;
+    time: string;
+    driver: User;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RequestStats {
+  moscowToLipetsk: number;
+  lipetskToMoscow: number;
+  total: number;
 }

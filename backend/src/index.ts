@@ -9,6 +9,10 @@ import tripsRoutes from './routes/trips.js';
 import bookingsRoutes from './routes/bookings.js';
 import reviewsRoutes from './routes/reviews.js';
 import aiRoutes from './routes/ai.js';
+import requestsRoutes from './routes/requests.js';
+import { createLogger } from './utils/logger.js';
+
+const log = createLogger('server');
 
 // ============ SETUP ============
 
@@ -18,10 +22,12 @@ const PORT = process.env.PORT || 3001;
 
 // ============ MIDDLEWARE ============
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '5mb' }));
 
 // ============ RATE LIMITING ============
@@ -74,15 +80,22 @@ app.use('/api/trips', tripsRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/requests', requestsRoutes);
 
 // ============ ERROR HANDLING ============
 
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error'
-  });
-});
+interface AppError extends Error {
+  status?: number;
+}
+
+app.use(
+  (err: AppError, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    log.error({ err, path: req.path, method: req.method }, 'Request error');
+    res.status(err.status || 500).json({
+      error: err.message || 'Internal Server Error',
+    });
+  }
+);
 
 // 404 handler
 app.use((req, res) => {
@@ -108,20 +121,60 @@ async function archivePastTrips() {
       where: {
         status: 'active',
         date: {
-          lt: todayStr
-        }
+          lt: todayStr,
+        },
       },
       data: {
-        status: 'completed'
-      }
+        status: 'completed',
+      },
     });
 
     if (result.count > 0) {
-      console.log(`📦 Архивировано ${result.count} прошедших поездок`);
+      log.info({ count: result.count }, 'Archived past trips');
     }
   } catch (error) {
-    console.error('Ошибка архивации поездок:', error);
+    log.error({ err: error }, 'Failed to archive past trips');
   }
+}
+
+/**
+ * Архивирует заявки, у которых истёк срок (dateTo < сегодня)
+ * Переводит их статус из 'pending' в 'expired'
+ */
+async function archiveExpiredRequests() {
+  try {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const result = await prisma.passengerRequest.updateMany({
+      where: {
+        status: 'pending',
+        dateTo: {
+          lt: todayStr,
+        },
+      },
+      data: {
+        status: 'expired',
+      },
+    });
+
+    if (result.count > 0) {
+      log.info({ count: result.count }, 'Archived expired requests');
+    }
+  } catch (error) {
+    log.error({ err: error }, 'Failed to archive expired requests');
+  }
+}
+
+/**
+ * Запускает все задачи архивации
+ */
+async function runArchiveTasks() {
+  await archivePastTrips();
+  await archiveExpiredRequests();
 }
 
 // ============ START ============
@@ -129,20 +182,19 @@ async function archivePastTrips() {
 async function main() {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected');
+    log.info('Database connected');
 
-    // Архивируем прошедшие поездки при старте
-    await archivePastTrips();
+    // Архивируем прошедшие поездки и заявки при старте
+    await runArchiveTasks();
 
     // Запускаем периодическую архивацию каждый час
-    setInterval(archivePastTrips, 60 * 60 * 1000);
+    setInterval(runArchiveTasks, 60 * 60 * 1000);
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📚 API docs: http://localhost:${PORT}/api/health`);
+      log.info({ port: PORT }, 'Server started');
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    log.fatal({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 }

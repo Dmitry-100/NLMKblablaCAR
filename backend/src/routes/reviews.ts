@@ -1,3 +1,6 @@
+import { createLogger } from '../utils/logger.js';
+const log = createLogger('reviews');
+
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.js';
@@ -10,12 +13,12 @@ const createReviewSchema = z.object({
   tripId: z.string().min(1, 'Укажите ID поездки'),
   targetUserId: z.string().min(1, 'Укажите ID пользователя'),
   rating: z.number().int().min(1).max(5),
-  comment: z.string().max(500).optional().default('')
+  comment: z.string().max(500).optional().default(''),
 });
 
 const skipReviewSchema = z.object({
   tripId: z.string().min(1, 'Укажите ID поездки'),
-  targetUserId: z.string().min(1, 'Укажите ID пользователя')
+  targetUserId: z.string().min(1, 'Укажите ID пользователя'),
 });
 
 // ============ HELPERS ============
@@ -31,7 +34,7 @@ function formatUserResponse(user: any) {
     position: user.position || '',
     homeCity: user.homeCity,
     role: user.role,
-    rating: user.rating
+    rating: user.rating,
   };
 }
 
@@ -46,7 +49,7 @@ function formatReviewResponse(review: any) {
     rating: review.rating,
     comment: review.comment,
     skipped: review.skipped,
-    createdAt: review.createdAt
+    createdAt: review.createdAt,
   };
 }
 
@@ -58,8 +61,8 @@ async function checkAndArchiveTrip(prisma: any, tripId: string) {
     where: { id: tripId },
     include: {
       bookings: { where: { status: 'confirmed' } },
-      reviews: true
-    }
+      reviews: true,
+    },
   });
 
   if (!trip || trip.status !== 'completed') return;
@@ -74,7 +77,7 @@ async function checkAndArchiveTrip(prisma: any, tripId: string) {
   if (trip.reviews.length >= expectedReviews) {
     await prisma.trip.update({
       where: { id: tripId },
-      data: { status: 'archived' }
+      data: { status: 'archived' },
     });
   }
 }
@@ -86,8 +89,8 @@ async function recalculateUserRating(prisma: any, userId: string) {
   const reviews = await prisma.review.findMany({
     where: {
       targetId: userId,
-      skipped: false // Только реальные отзывы
-    }
+      skipped: false, // Только реальные отзывы
+    },
   });
 
   if (reviews.length === 0) {
@@ -99,7 +102,7 @@ async function recalculateUserRating(prisma: any, userId: string) {
 
   await prisma.user.update({
     where: { id: userId },
-    data: { rating: Math.round(avgRating * 10) / 10 } // Округляем до 1 знака
+    data: { rating: Math.round(avgRating * 10) / 10 }, // Округляем до 1 знака
   });
 }
 
@@ -115,8 +118,8 @@ async function validateParticipation(prisma: any, tripId: string, userId: string
     where: {
       tripId,
       passengerId: userId,
-      status: 'confirmed'
-    }
+      status: 'confirmed',
+    },
   });
 
   return !!booking; // Пассажир
@@ -137,8 +140,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     const trip = await req.prisma.trip.findUnique({
       where: { id: tripId },
       include: {
-        bookings: { where: { status: 'confirmed' } }
-      }
+        bookings: { where: { status: 'confirmed' } },
+      },
     });
 
     if (!trip) {
@@ -146,7 +149,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     if (trip.status !== 'completed') {
-      return res.status(400).json({ error: 'Можно оставить отзыв только после завершения поездки' });
+      return res
+        .status(400)
+        .json({ error: 'Можно оставить отзыв только после завершения поездки' });
     }
 
     // 2. Проверяем что автор участвовал в поездке
@@ -172,13 +177,15 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         tripId_authorId_targetId: {
           tripId,
           authorId: req.userId!,
-          targetId: targetUserId
-        }
-      }
+          targetId: targetUserId,
+        },
+      },
     });
 
     if (existingReview) {
-      return res.status(400).json({ error: 'Вы уже оставили отзыв этому пользователю за эту поездку' });
+      return res
+        .status(400)
+        .json({ error: 'Вы уже оставили отзыв этому пользователю за эту поездку' });
     }
 
     // 6. Создаём отзыв
@@ -189,12 +196,12 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         targetId: targetUserId,
         rating,
         comment: comment || '',
-        skipped: false
+        skipped: false,
       },
       include: {
         author: true,
-        target: true
-      }
+        target: true,
+      },
     });
 
     // 7. Пересчитываем рейтинг получателя
@@ -204,12 +211,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     await checkAndArchiveTrip(req.prisma, tripId);
 
     res.status(201).json({ review: formatReviewResponse(review) });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('Create review error:', error);
+    log.error({ err: error }, 'Create review error:');
     res.status(500).json({ error: 'Ошибка создания отзыва' });
   }
 });
@@ -227,8 +233,8 @@ router.post('/skip', authMiddleware, async (req: Request, res: Response) => {
     const trip = await req.prisma.trip.findUnique({
       where: { id: tripId },
       include: {
-        bookings: { where: { status: 'confirmed' } }
-      }
+        bookings: { where: { status: 'confirmed' } },
+      },
     });
 
     if (!trip) {
@@ -236,7 +242,9 @@ router.post('/skip', authMiddleware, async (req: Request, res: Response) => {
     }
 
     if (trip.status !== 'completed') {
-      return res.status(400).json({ error: 'Можно пропустить отзыв только после завершения поездки' });
+      return res
+        .status(400)
+        .json({ error: 'Можно пропустить отзыв только после завершения поездки' });
     }
 
     const authorParticipated = await validateParticipation(req.prisma, tripId, req.userId!, trip);
@@ -258,9 +266,9 @@ router.post('/skip', authMiddleware, async (req: Request, res: Response) => {
         tripId_authorId_targetId: {
           tripId,
           authorId: req.userId!,
-          targetId: targetUserId
-        }
-      }
+          targetId: targetUserId,
+        },
+      },
     });
 
     if (existingReview) {
@@ -275,20 +283,19 @@ router.post('/skip', authMiddleware, async (req: Request, res: Response) => {
         targetId: targetUserId,
         rating: 0,
         comment: '',
-        skipped: true
-      }
+        skipped: true,
+      },
     });
 
     // Проверяем, нужно ли архивировать поездку
     await checkAndArchiveTrip(req.prisma, tripId);
 
     res.json({ success: true, message: 'Отзыв пропущен' });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('Skip review error:', error);
+    log.error({ err: error }, 'Skip review error:');
     res.status(500).json({ error: 'Ошибка при пропуске отзыва' });
   }
 });
@@ -309,23 +316,23 @@ router.get('/pending', authMiddleware, async (req: Request, res: Response) => {
             bookings: {
               some: {
                 passengerId: req.userId,
-                status: 'confirmed'
-              }
-            }
-          }
-        ]
+                status: 'confirmed',
+              },
+            },
+          },
+        ],
       },
       include: {
         driver: true,
         bookings: {
           where: { status: 'confirmed' },
-          include: { passenger: true }
+          include: { passenger: true },
         },
         reviews: {
-          where: { authorId: req.userId }
-        }
+          where: { authorId: req.userId },
+        },
       },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     });
 
     // Формируем список с информацией о том, кому ещё не оставлен отзыв
@@ -359,17 +366,16 @@ router.get('/pending', authMiddleware, async (req: Request, res: Response) => {
             date: trip.date,
             time: trip.time,
             driverId: trip.driverId,
-            driver: formatUserResponse(trip.driver)
+            driver: formatUserResponse(trip.driver),
           },
-          pendingFor
+          pendingFor,
         });
       }
     }
 
     res.json({ pendingReviews });
-
   } catch (error) {
-    console.error('Get pending reviews error:', error);
+    log.error({ err: error }, 'Get pending reviews error:');
     res.status(500).json({ error: 'Ошибка получения списка поездок для отзыва' });
   }
 });
@@ -385,21 +391,20 @@ router.get('/user/:id', async (req: Request, res: Response) => {
     const reviews = await req.prisma.review.findMany({
       where: {
         targetId: userId,
-        skipped: false // Только реальные отзывы
+        skipped: false, // Только реальные отзывы
       },
       include: {
         author: true,
-        trip: true
+        trip: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     res.json({
-      reviews: reviews.map(formatReviewResponse)
+      reviews: reviews.map(formatReviewResponse),
     });
-
   } catch (error) {
-    console.error('Get user reviews error:', error);
+    log.error({ err: error }, 'Get user reviews error:');
     res.status(500).json({ error: 'Ошибка получения отзывов' });
   }
 });

@@ -3,7 +3,7 @@
  * Подключается к реальному бэкенду с поддержкой refresh tokens
  */
 
-import { Trip, User, Review, PendingReview } from '../types';
+import { Trip, User, Review, PendingReview, PassengerRequest, RequestStats } from '../types';
 
 // ============ CONFIGURATION ============
 
@@ -360,7 +360,12 @@ export const api = {
   /**
    * Создать отзыв о пользователе
    */
-  async submitReview(tripId: string, targetUserId: string, rating: number, comment?: string): Promise<Review> {
+  async submitReview(
+    tripId: string,
+    targetUserId: string,
+    rating: number,
+    comment?: string
+  ): Promise<Review> {
     const { review } = await request<{ review: Review }>('/reviews', {
       method: 'POST',
       body: JSON.stringify({ tripId, targetUserId, rating, comment: comment || '' }),
@@ -382,7 +387,9 @@ export const api = {
    * Получить поездки, ожидающие отзыва
    */
   async getPendingReviews(): Promise<PendingReview[]> {
-    const { pendingReviews } = await request<{ pendingReviews: PendingReview[] }>('/reviews/pending');
+    const { pendingReviews } = await request<{ pendingReviews: PendingReview[] }>(
+      '/reviews/pending'
+    );
     return pendingReviews;
   },
 
@@ -392,6 +399,153 @@ export const api = {
   async getUserReviews(userId: string): Promise<Review[]> {
     const { reviews } = await request<{ reviews: Review[] }>(`/reviews/user/${userId}`);
     return reviews;
+  },
+
+  // --- PASSENGER REQUESTS ---
+
+  /**
+   * Создать заявку на поездку
+   */
+  async createRequest(data: {
+    from: string;
+    to: string;
+    dateFrom: string;
+    dateTo: string;
+    timePreferred?: string;
+    passengersCount?: number;
+    comment?: string;
+    preferences?: {
+      music?: string;
+      smoking?: boolean;
+      pets?: boolean;
+      baggage?: string;
+      conversation?: string;
+      ac?: boolean;
+    };
+  }): Promise<PassengerRequest> {
+    const { request: passengerRequest } = await request<{ request: PassengerRequest }>(
+      '/requests',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+    return passengerRequest;
+  },
+
+  /**
+   * Получить список заявок (для водителей)
+   */
+  async getRequests(filters?: {
+    from?: string;
+    to?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    status?: string;
+  }): Promise<PassengerRequest[]> {
+    const params = new URLSearchParams();
+    if (filters?.from) params.set('from', filters.from);
+    if (filters?.to) params.set('to', filters.to);
+    if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) params.set('dateTo', filters.dateTo);
+    if (filters?.status) params.set('status', filters.status);
+
+    const query = params.toString();
+    const endpoint = query ? `/requests?${query}` : '/requests';
+
+    const { requests } = await request<{ requests: PassengerRequest[] }>(endpoint);
+    return requests;
+  },
+
+  /**
+   * Получить мои заявки
+   */
+  async getMyRequests(): Promise<PassengerRequest[]> {
+    const { requests } = await request<{ requests: PassengerRequest[] }>('/requests/my');
+    return requests;
+  },
+
+  /**
+   * Получить статистику заявок
+   */
+  async getRequestStats(): Promise<RequestStats> {
+    const { stats } = await request<{ stats: RequestStats }>('/requests/stats');
+    return stats;
+  },
+
+  /**
+   * Получить заявки, подходящие под поездку
+   */
+  async getMatchingRequests(tripData: {
+    from: string;
+    to: string;
+    date: string;
+    seatsAvailable?: number;
+  }): Promise<PassengerRequest[]> {
+    const params = new URLSearchParams();
+    params.set('from', tripData.from);
+    params.set('to', tripData.to);
+    params.set('date', tripData.date);
+    if (tripData.seatsAvailable) params.set('seatsAvailable', tripData.seatsAvailable.toString());
+
+    const { requests } = await request<{ requests: PassengerRequest[] }>(
+      `/requests/matching?${params.toString()}`
+    );
+    return requests;
+  },
+
+  /**
+   * Обновить заявку
+   */
+  async updateRequest(
+    id: string,
+    data: {
+      dateFrom?: string;
+      dateTo?: string;
+      timePreferred?: string | null;
+      passengersCount?: number;
+      comment?: string;
+      preferences?: {
+        music?: string;
+        smoking?: boolean;
+        pets?: boolean;
+        baggage?: string;
+        conversation?: string;
+        ac?: boolean;
+      };
+    }
+  ): Promise<PassengerRequest> {
+    const { request: passengerRequest } = await request<{ request: PassengerRequest }>(
+      `/requests/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+    return passengerRequest;
+  },
+
+  /**
+   * Отменить заявку
+   */
+  async cancelRequest(id: string): Promise<void> {
+    await request(`/requests/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Связать заявку с поездкой
+   */
+  async linkRequestToTrip(requestId: string, tripId: string): Promise<PassengerRequest> {
+    const { request: passengerRequest } = await request<{ request: PassengerRequest }>(
+      `/requests/${requestId}/link`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ tripId }),
+      }
+    );
+    return passengerRequest;
   },
 };
 

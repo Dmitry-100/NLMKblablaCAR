@@ -32,7 +32,7 @@ export function TripRouteMap({
   fromCity,
   toCity,
   className = '',
-  onClick
+  onClick,
 }: TripRouteMapProps) {
   const { isLoaded, ymaps } = useYandexMaps();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -68,15 +68,15 @@ export function TripRouteMap({
         // Вычисляем zoom на основе расстояния
         const distance = Math.sqrt(
           Math.pow(pickupCoords.lat - dropoffCoords.lat, 2) +
-          Math.pow(pickupCoords.lng - dropoffCoords.lng, 2)
+            Math.pow(pickupCoords.lng - dropoffCoords.lng, 2)
         );
         const zoom = distance > 1 ? 8 : distance > 0.1 ? 11 : 14;
 
         map = new YMap(mapContainerRef.current, {
           location: {
             center: [centerLng, centerLat],
-            zoom: zoom
-          }
+            zoom: zoom,
+          },
         });
 
         map.addChild(new YMapDefaultSchemeLayer({}));
@@ -95,9 +95,12 @@ export function TripRouteMap({
           "></div>
         `;
 
-        const pickupMarker = new YMapMarker({
-          coordinates: [pickupCoords.lng, pickupCoords.lat]
-        }, pickupMarkerElement);
+        const pickupMarker = new YMapMarker(
+          {
+            coordinates: [pickupCoords.lng, pickupCoords.lat],
+          },
+          pickupMarkerElement
+        );
 
         map.addChild(pickupMarker);
 
@@ -114,15 +117,17 @@ export function TripRouteMap({
           "></div>
         `;
 
-        const dropoffMarker = new YMapMarker({
-          coordinates: [dropoffCoords.lng, dropoffCoords.lat]
-        }, dropoffMarkerElement);
+        const dropoffMarker = new YMapMarker(
+          {
+            coordinates: [dropoffCoords.lng, dropoffCoords.lat],
+          },
+          dropoffMarkerElement
+        );
 
         map.addChild(dropoffMarker);
 
         mapRef.current = map;
         setIsMapReady(true);
-
       } catch (error) {
         console.error('Map initialization error:', error);
         setMapError(true);

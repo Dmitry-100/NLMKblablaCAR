@@ -1,6 +1,16 @@
-import { City, ConversationPref, MusicPref, BaggageSize, Preferences, User, Role, Trip } from './types';
+import {
+  City,
+  ConversationPref,
+  MusicPref,
+  BaggageSize,
+  Preferences,
+  User,
+  Role,
+  Trip,
+} from './types';
 
-export const APP_NAME = "NLMKblablaCAR";
+export const APP_NAME = 'NLMKblablaCAR';
+export const APP_VERSION = '2.5.0';
 
 export const DEFAULT_PREFERENCES: Preferences = {
   music: MusicPref.Normal,
@@ -30,7 +40,13 @@ export const MOCK_TRIPS: Trip[] = [
   {
     id: 't1',
     driverId: 'u2',
-    driver: { ...MOCK_USER, id: 'u2', name: 'Мария Иванова', avatarUrl: 'https://picsum.photos/201/201', rating: 5.0 },
+    driver: {
+      ...MOCK_USER,
+      id: 'u2',
+      name: 'Мария Иванова',
+      avatarUrl: 'https://picsum.photos/201/201',
+      rating: 5.0,
+    },
     from: City.Moscow,
     to: City.Lipetsk,
     date: new Date().toISOString().split('T')[0],
@@ -47,7 +63,13 @@ export const MOCK_TRIPS: Trip[] = [
   {
     id: 't2',
     driverId: 'u2',
-    driver: { ...MOCK_USER, id: 'u2', name: 'Мария Иванова', avatarUrl: 'https://picsum.photos/201/201', rating: 5.0 },
+    driver: {
+      ...MOCK_USER,
+      id: 'u2',
+      name: 'Мария Иванова',
+      avatarUrl: 'https://picsum.photos/201/201',
+      rating: 5.0,
+    },
     from: City.Lipetsk,
     to: City.Moscow,
     date: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
@@ -60,5 +82,5 @@ export const MOCK_TRIPS: Trip[] = [
     comment: 'Возвращаюсь после встреч.',
     tripGroupId: 'g1',
     isReturn: true,
-  }
+  },
 ];

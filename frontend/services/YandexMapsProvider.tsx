@@ -26,7 +26,7 @@ const YandexMapsContext = createContext<YandexMapsContextValue>({
   isLoaded: false,
   isLoading: true,
   error: null,
-  ymaps: null
+  ymaps: null,
 });
 
 // ============ PROVIDER ============
@@ -60,7 +60,7 @@ export function YandexMapsProvider({ children, apiKey }: YandexMapsProviderProps
         setIsLoaded(true);
         setYmaps(getYmaps());
       })
-      .catch((err) => {
+      .catch(err => {
         console.error('Failed to load Yandex Maps:', err);
         setError(err);
       })
@@ -73,14 +73,10 @@ export function YandexMapsProvider({ children, apiKey }: YandexMapsProviderProps
     isLoaded,
     isLoading,
     error,
-    ymaps
+    ymaps,
   };
 
-  return (
-    <YandexMapsContext.Provider value={value}>
-      {children}
-    </YandexMapsContext.Provider>
-  );
+  return <YandexMapsContext.Provider value={value}>{children}</YandexMapsContext.Provider>;
 }
 
 // ============ HOOK ============

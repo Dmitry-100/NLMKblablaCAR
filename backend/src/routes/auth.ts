@@ -1,3 +1,6 @@
+import { createLogger } from '../utils/logger.js';
+const log = createLogger('auth');
+
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -5,7 +8,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-  authMiddleware
+  authMiddleware,
 } from '../middleware/auth.js';
 
 const router = Router();
@@ -13,14 +16,14 @@ const router = Router();
 // ============ VALIDATION SCHEMAS ============
 
 const loginSchema = z.object({
-  email: z.string().email('Некорректный email')
+  email: z.string().email('Некорректный email'),
 });
 
 const registerSchema = z.object({
   email: z.string().email('Некорректный email'),
   name: z.string().min(2, 'Имя должно быть минимум 2 символа'),
   homeCity: z.enum(['Moscow', 'Lipetsk']).optional(),
-  role: z.enum(['Driver', 'Passenger', 'Both']).optional()
+  role: z.enum(['Driver', 'Passenger', 'Both']).optional(),
 });
 
 // ============ ROUTES ============
@@ -33,28 +36,28 @@ const registerSchema = z.object({
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email } = loginSchema.parse(req.body);
-    
+
     // Ищем пользователя
     let user = await req.prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
+      where: { email: email.toLowerCase() },
     });
-    
+
     // Если пользователя нет - создаём нового (auto-register)
     if (!user) {
       const nameFromEmail = email.split('@')[0];
       const capitalizedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-      
+
       user = await req.prisma.user.create({
         data: {
           email: email.toLowerCase(),
           name: capitalizedName,
           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
           homeCity: 'Moscow',
-          role: 'Passenger'
-        }
+          role: 'Passenger',
+        },
       });
     }
-    
+
     // Генерируем токены
     const accessToken = generateAccessToken(user.id, user.email);
     const refreshToken = generateRefreshToken(user.id);
@@ -63,14 +66,13 @@ router.post('/login', async (req: Request, res: Response) => {
     res.json({
       accessToken,
       refreshToken,
-      user: formatUserResponse(user)
+      user: formatUserResponse(user),
     });
-    
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('Login error:', error);
+    log.error({ err: error }, 'Login error:');
     res.status(500).json({ error: 'Ошибка авторизации' });
   }
 });
@@ -82,16 +84,16 @@ router.post('/login', async (req: Request, res: Response) => {
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const data = registerSchema.parse(req.body);
-    
+
     // Проверяем, не занят ли email
     const existing = await req.prisma.user.findUnique({
-      where: { email: data.email.toLowerCase() }
+      where: { email: data.email.toLowerCase() },
     });
-    
+
     if (existing) {
       return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
     }
-    
+
     // Создаём пользователя
     const user = await req.prisma.user.create({
       data: {
@@ -99,24 +101,23 @@ router.post('/register', async (req: Request, res: Response) => {
         name: data.name,
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.email}`,
         homeCity: data.homeCity || 'Moscow',
-        role: data.role || 'Passenger'
-      }
+        role: data.role || 'Passenger',
+      },
     });
-    
+
     const accessToken = generateAccessToken(user.id, user.email);
     const refreshToken = generateRefreshToken(user.id);
 
     res.status(201).json({
       accessToken,
       refreshToken,
-      user: formatUserResponse(user)
+      user: formatUserResponse(user),
     });
-    
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('Register error:', error);
+    log.error({ err: error }, 'Register error:');
     res.status(500).json({ error: 'Ошибка регистрации' });
   }
 });
@@ -128,17 +129,16 @@ router.post('/register', async (req: Request, res: Response) => {
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = await req.prisma.user.findUnique({
-      where: { id: req.userId }
+      where: { id: req.userId },
     });
-    
+
     if (!user) {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
-    
+
     res.json({ user: formatUserResponse(user) });
-    
   } catch (error) {
-    console.error('Get me error:', error);
+    log.error({ err: error }, 'Get me error:');
     res.status(500).json({ error: 'Ошибка получения профиля' });
   }
 });
@@ -163,7 +163,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
     // Get user from DB
     const user = await req.prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -177,11 +177,10 @@ router.post('/refresh', async (req: Request, res: Response) => {
     res.json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
-      user: formatUserResponse(user)
+      user: formatUserResponse(user),
     });
-
   } catch (error) {
-    console.error('Refresh error:', error);
+    log.error({ err: error }, 'Refresh error:');
     res.status(500).json({ error: 'Ошибка обновления токена' });
   }
 });
@@ -206,8 +205,8 @@ function formatUserResponse(user: any) {
       pets: user.prefPets,
       baggage: user.prefBaggage,
       conversation: user.prefConversation,
-      ac: user.prefAc
-    }
+      ac: user.prefAc,
+    },
   };
 }
 

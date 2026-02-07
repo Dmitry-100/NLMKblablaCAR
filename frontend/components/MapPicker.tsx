@@ -7,7 +7,12 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { X, MapPin, Check, Loader2, Navigation2 } from 'lucide-react';
 import { City } from '../types';
 import { useYandexMaps } from '../services/YandexMapsProvider';
-import { CITY_BOUNDS, getAddressFromCoords, LocationData, Coords } from '../services/yandexMapsService';
+import {
+  CITY_BOUNDS,
+  getAddressFromCoords,
+  LocationData,
+  Coords,
+} from '../services/yandexMapsService';
 
 // ============ TYPES ============
 
@@ -21,13 +26,7 @@ interface MapPickerProps {
 
 // ============ COMPONENT ============
 
-export function MapPicker({
-  isOpen,
-  onClose,
-  onSelect,
-  city,
-  initialLocation
-}: MapPickerProps) {
+export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: MapPickerProps) {
   const { isLoaded, ymaps } = useYandexMaps();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -45,19 +44,20 @@ export function MapPicker({
   const cityBounds = CITY_BOUNDS[city];
 
   // Обновление маркера на карте
-  const updateMarker = useCallback((coords: Coords) => {
-    if (!mapRef.current || !ymaps) return;
+  const updateMarker = useCallback(
+    (coords: Coords) => {
+      if (!mapRef.current || !ymaps) return;
 
-    const { YMapMarker } = ymaps;
+      const { YMapMarker } = ymaps;
 
-    // Удаляем старый маркер
-    if (markerRef.current) {
-      mapRef.current.removeChild(markerRef.current);
-    }
+      // Удаляем старый маркер
+      if (markerRef.current) {
+        mapRef.current.removeChild(markerRef.current);
+      }
 
-    // Создаём новый маркер
-    const markerElement = document.createElement('div');
-    markerElement.innerHTML = `
+      // Создаём новый маркер
+      const markerElement = document.createElement('div');
+      markerElement.innerHTML = `
       <div style="
         width: 40px;
         height: 40px;
@@ -80,31 +80,39 @@ export function MapPicker({
       </div>
     `;
 
-    const marker = new YMapMarker({
-      coordinates: [coords.lng, coords.lat]
-    }, markerElement);
+      const marker = new YMapMarker(
+        {
+          coordinates: [coords.lng, coords.lat],
+        },
+        markerElement
+      );
 
-    mapRef.current.addChild(marker);
-    markerRef.current = marker;
-  }, [ymaps]);
+      mapRef.current.addChild(marker);
+      markerRef.current = marker;
+    },
+    [ymaps]
+  );
 
   // Обработка клика по карте
-  const handleMapClick = useCallback(async (coords: Coords) => {
-    setSelectedCoords(coords);
-    updateMarker(coords);
+  const handleMapClick = useCallback(
+    async (coords: Coords) => {
+      setSelectedCoords(coords);
+      updateMarker(coords);
 
-    // Получаем адрес по координатам
-    setIsLoadingAddress(true);
-    try {
-      const address = await getAddressFromCoords(coords.lat, coords.lng);
-      setSelectedAddress(address);
-    } catch (error) {
-      console.error('Reverse geocoding error:', error);
-      setSelectedAddress('');
-    } finally {
-      setIsLoadingAddress(false);
-    }
-  }, [updateMarker]);
+      // Получаем адрес по координатам
+      setIsLoadingAddress(true);
+      try {
+        const address = await getAddressFromCoords(coords.lat, coords.lng);
+        setSelectedAddress(address);
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        setSelectedAddress('');
+      } finally {
+        setIsLoadingAddress(false);
+      }
+    },
+    [updateMarker]
+  );
 
   // Инициализация карты
   useEffect(() => {
@@ -119,15 +127,16 @@ export function MapPicker({
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapListener } = ymaps;
 
         // Начальный центр: из initialLocation или центр города
-        const initialCenter = initialLocation?.lat && initialLocation?.lng
-          ? [initialLocation.lng, initialLocation.lat]
-          : [cityBounds.center[1], cityBounds.center[0]];
+        const initialCenter =
+          initialLocation?.lat && initialLocation?.lng
+            ? [initialLocation.lng, initialLocation.lat]
+            : [cityBounds.center[1], cityBounds.center[0]];
 
         map = new YMap(mapContainerRef.current, {
           location: {
             center: initialCenter,
-            zoom: 13
-          }
+            zoom: 13,
+          },
         });
 
         map.addChild(new YMapDefaultSchemeLayer({}));
@@ -141,10 +150,10 @@ export function MapPicker({
             if (coordinates && Array.isArray(coordinates)) {
               handleMapClick({
                 lat: coordinates[1],
-                lng: coordinates[0]
+                lng: coordinates[0],
               });
             }
-          }
+          },
         });
         map.addChild(listener);
 
@@ -154,10 +163,9 @@ export function MapPicker({
         if (initialLocation?.lat && initialLocation?.lng) {
           updateMarker({
             lat: initialLocation.lat,
-            lng: initialLocation.lng
+            lng: initialLocation.lng,
           });
         }
-
       } catch (error) {
         console.error('Map initialization error:', error);
       }
@@ -184,19 +192,23 @@ export function MapPicker({
     setIsLocating(true);
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      async position => {
         const coords = {
           lat: position.coords.latitude,
-          lng: position.coords.longitude
+          lng: position.coords.longitude,
         };
 
         // Проверяем, что точка в пределах города
         const bounds = cityBounds.bounds;
         if (
-          coords.lat < bounds[0][0] || coords.lat > bounds[1][0] ||
-          coords.lng < bounds[0][1] || coords.lng > bounds[1][1]
+          coords.lat < bounds[0][0] ||
+          coords.lat > bounds[1][0] ||
+          coords.lng < bounds[0][1] ||
+          coords.lng > bounds[1][1]
         ) {
-          alert(`Ваше местоположение находится за пределами ${city === City.Moscow ? 'Москвы' : 'Липецка'}`);
+          alert(
+            `Ваше местоположение находится за пределами ${city === City.Moscow ? 'Москвы' : 'Липецка'}`
+          );
           setIsLocating(false);
           return;
         }
@@ -206,14 +218,14 @@ export function MapPicker({
           mapRef.current.setLocation({
             center: [coords.lng, coords.lat],
             zoom: 15,
-            duration: 500
+            duration: 500,
           });
         }
 
         handleMapClick(coords);
         setIsLocating(false);
       },
-      (error) => {
+      error => {
         console.error('Geolocation error:', error);
         alert('Не удалось определить местоположение');
         setIsLocating(false);
@@ -228,7 +240,7 @@ export function MapPicker({
       onSelect({
         address: selectedAddress,
         lat: selectedCoords.lat,
-        lng: selectedCoords.lng
+        lng: selectedCoords.lng,
       });
     }
     onClose();
@@ -246,9 +258,7 @@ export function MapPicker({
         >
           <X size={24} />
         </button>
-        <h2 className="font-semibold text-gray-800">
-          Выберите точку на карте
-        </h2>
+        <h2 className="font-semibold text-gray-800">Выберите точку на карте</h2>
         <div className="w-10" /> {/* Spacer */}
       </div>
 
