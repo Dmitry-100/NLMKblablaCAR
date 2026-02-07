@@ -37,7 +37,7 @@ export interface Preferences {
 
 export interface User {
   id: string;
-  email: string;
+  email: string | null;
   name: string;
   avatarUrl: string;
   phone: string;
@@ -47,6 +47,8 @@ export interface User {
   role: Role;
   defaultPreferences: Preferences;
   rating: number;
+  telegramLinked?: boolean;
+  telegramUsername?: string | null;
 }
 
 export interface Trip {

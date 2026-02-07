@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { authMiddleware, optionalAuth } from '../middleware/auth.js';
 import { createLogger } from '../utils/logger.js';
+import { notifyMatchingTrip, notifyTripCancelled } from '../services/telegram.js';
 
 const router = Router();
 const log = createLogger('trips');
@@ -221,6 +222,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       },
     });
 
+    // Notify passengers with matching requests (async, don't wait)
+    notifyMatchingPassengers(req.prisma, trip).catch(err =>
+      log.error({ err }, 'Failed to notify matching passengers')
+    );
+
     res.status(201).json({ trip: formatTripResponse(trip, req.userId) });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -325,6 +331,13 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const trip = await req.prisma.trip.findUnique({
       where: { id: req.params.id },
+      include: {
+        driver: true,
+        bookings: {
+          where: { status: 'confirmed' },
+          include: { passenger: true },
+        },
+      },
     });
 
     if (!trip) {
@@ -347,6 +360,19 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
       data: { status: 'cancelled' },
     });
 
+    // Notify passengers about cancellation (async, don't wait)
+    for (const booking of trip.bookings) {
+      if (booking.passenger.telegramChatId) {
+        notifyTripCancelled(
+          booking.passenger.telegramChatId,
+          trip.driver?.name || 'Водитель',
+          trip.date,
+          trip.fromCity,
+          trip.toCity
+        ).catch(err => log.error({ err }, 'Failed to send trip cancellation notification'));
+      }
+    }
+
     res.json({ success: true, message: 'Поездка отменена' });
   } catch (error) {
     log.error({ err: error }, 'Delete trip error');
@@ -356,7 +382,51 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
 
 // ============ HELPERS ============
 
-import { User, Trip, Booking } from '@prisma/client';
+import { User, Trip, Booking, PrismaClient } from '@prisma/client';
+
+/**
+ * Notify passengers who have matching requests for this new trip
+ */
+async function notifyMatchingPassengers(
+  prisma: PrismaClient,
+  trip: Trip & { driver?: User }
+) {
+  // Find matching pending requests
+  const matchingRequests = await prisma.passengerRequest.findMany({
+    where: {
+      status: 'pending',
+      fromCity: trip.fromCity,
+      toCity: trip.toCity,
+      dateFrom: { lte: trip.date },
+      dateTo: { gte: trip.date },
+      requesterId: { not: trip.driverId }, // Exclude driver's own requests
+    },
+    include: {
+      requester: true,
+    },
+  });
+
+  // Notify each requester
+  for (const request of matchingRequests) {
+    if (request.requester.telegramChatId) {
+      await notifyMatchingTrip(
+        request.requester.telegramChatId,
+        trip.driver?.name || 'Водитель',
+        trip.date,
+        trip.time,
+        trip.fromCity,
+        trip.toCity
+      );
+    }
+  }
+
+  if (matchingRequests.length > 0) {
+    log.info(
+      { tripId: trip.id, count: matchingRequests.length },
+      'Notified matching passengers'
+    );
+  }
+}
 
 type UserWithPrefs = User;
 type TripWithBookings = Trip & {

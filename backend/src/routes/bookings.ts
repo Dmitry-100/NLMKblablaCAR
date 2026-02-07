@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
 import { UserBasic, TripWithDriver, BookingWithRelations, BookingWithTrip } from '../types/index.js';
+import { notifyNewBooking, notifyBookingCancelled } from '../services/telegram.js';
 
 // Union type for formatBookingResponse
 type BookingForFormatting = BookingWithRelations | BookingWithTrip;
@@ -113,6 +114,18 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       throw new ApiError(500, 'Не удалось создать бронирование');
     }
 
+    // Send notification to driver (async, don't wait)
+    if (booking.trip.driver.telegramChatId) {
+      notifyNewBooking(
+        booking.trip.driver.telegramChatId,
+        booking.passenger?.name || 'Пассажир',
+        booking.trip.date,
+        booking.trip.time,
+        booking.trip.fromCity,
+        booking.trip.toCity
+      ).catch(err => log.error({ err }, 'Failed to send booking notification'));
+    }
+
     res.status(201).json({
       booking: formatBookingResponse(booking),
       message: 'Место успешно забронировано!',
@@ -190,6 +203,15 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
  */
 router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
+    // Get booking with full details for notification
+    const bookingForNotification = await req.prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: {
+        trip: { include: { driver: true } },
+        passenger: true,
+      },
+    });
+
     await req.prisma.$transaction(
       async tx => {
         const booking = await tx.booking.findUnique({
@@ -233,6 +255,25 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       }
     );
+
+    // Send notification about cancellation
+    if (bookingForNotification) {
+      const cancelledBy = bookingForNotification.passengerId === req.userId ? 'passenger' : 'driver';
+      const notifyUserId =
+        cancelledBy === 'passenger'
+          ? bookingForNotification.trip.driver.telegramChatId
+          : bookingForNotification.passenger.telegramChatId;
+
+      if (notifyUserId) {
+        notifyBookingCancelled(
+          notifyUserId,
+          cancelledBy,
+          bookingForNotification.trip.date,
+          bookingForNotification.trip.fromCity,
+          bookingForNotification.trip.toCity
+        ).catch(err => log.error({ err }, 'Failed to send cancellation notification'));
+      }
+    }
 
     res.json({ success: true, message: 'Бронирование отменено' });
   } catch (error) {

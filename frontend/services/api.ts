@@ -165,6 +165,35 @@ export const api = {
   },
 
   /**
+   * Авторизация через Telegram
+   */
+  async loginWithTelegram(telegramData: {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+    auth_date: number;
+    hash: string;
+  }): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/auth/telegram`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(telegramData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Ошибка авторизации через Telegram');
+    }
+
+    // Save both tokens
+    setTokens(data.accessToken, data.refreshToken);
+    return data.user;
+  },
+
+  /**
    * Получить текущего пользователя по токену
    */
   async getCurrentUser(): Promise<User | null> {

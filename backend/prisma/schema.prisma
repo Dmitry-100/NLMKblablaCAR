@@ -46,7 +46,16 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+
+  // Auth: email OR telegram (at least one required)
+  email     String?  @unique
+
+  // Telegram auth fields
+  telegramId       BigInt?  @unique  // Telegram user ID
+  telegramUsername String?           // @username
+  telegramChatId   BigInt?           // For sending notifications
+  telegramPhotoUrl String?           // Profile photo from Telegram
+
   name      String
   avatarUrl String   @default("")
   phone     String   @default("")
@@ -55,7 +64,7 @@ model User {
   homeCity  String   @default("Moscow") // City enum
   role      String   @default("Passenger") // Role enum
   rating    Float    @default(5.0)
-  
+
   // Preferences (embedded as JSON or separate fields)
   prefMusic        String  @default("Normal") // MusicPref
   prefSmoking      Boolean @default(false)
@@ -63,16 +72,19 @@ model User {
   prefBaggage      String  @default("Hand") // BaggageSize
   prefConversation String  @default("Chatty") // ConversationPref
   prefAc           Boolean @default(true)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   tripsAsDriver      Trip[]              @relation("DriverTrips")
   bookings           Booking[]
   reviewsGiven       Review[]            @relation("ReviewAuthor")
   reviewsReceived    Review[]            @relation("ReviewTarget")
   passengerRequests  PassengerRequest[]  @relation("PassengerRequests")
+
+  // Index for Telegram lookup
+  @@index([telegramId])
 }
 
 model Trip {

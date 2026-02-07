@@ -60,7 +60,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // Генерируем токены
-    const accessToken = generateAccessToken(user.id, user.email);
+    const accessToken = generateAccessToken(user.id, user.email || '');
     const refreshToken = generateRefreshToken(user.id);
 
     // Возвращаем пользователя и токены
@@ -106,7 +106,7 @@ router.post('/register', async (req: Request, res: Response) => {
       },
     });
 
-    const accessToken = generateAccessToken(user.id, user.email);
+    const accessToken = generateAccessToken(user.id, user.email || '');
     const refreshToken = generateRefreshToken(user.id);
 
     res.status(201).json({
@@ -172,7 +172,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     }
 
     // Generate new tokens
-    const newAccessToken = generateAccessToken(user.id, user.email);
+    const newAccessToken = generateAccessToken(user.id, user.email || '');
     const newRefreshToken = generateRefreshToken(user.id);
 
     res.json({

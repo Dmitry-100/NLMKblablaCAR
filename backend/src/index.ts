@@ -10,6 +10,7 @@ import bookingsRoutes from './routes/bookings.js';
 import reviewsRoutes from './routes/reviews.js';
 import aiRoutes from './routes/ai.js';
 import requestsRoutes from './routes/requests.js';
+import telegramRoutes from './routes/telegram.js';
 import { createLogger } from './utils/logger.js';
 
 const log = createLogger('server');
@@ -75,6 +76,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api', authLimiter, telegramRoutes); // Telegram auth routes
 app.use('/api/users', usersRoutes);
 app.use('/api/trips', tripsRoutes);
 app.use('/api/bookings', bookingsRoutes);

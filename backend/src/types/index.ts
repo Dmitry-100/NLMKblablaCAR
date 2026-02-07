@@ -102,7 +102,7 @@ export type RequestWithRequester = Prisma.PassengerRequestGetPayload<{
 // API Response types
 export interface UserResponse {
   id: string;
-  email: string;
+  email: string | null;
   name: string;
   avatarUrl: string;
   phone: string;
@@ -111,6 +111,8 @@ export interface UserResponse {
   homeCity: string;
   role: string;
   rating: number;
+  telegramLinked?: boolean;
+  telegramUsername?: string | null;
   defaultPreferences: {
     music: string;
     smoking: boolean;

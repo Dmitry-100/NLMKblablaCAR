@@ -64,6 +64,7 @@ import { LocationInput } from './components/LocationInput';
 import { MapPicker } from './components/MapPicker';
 import { LocationData } from './services/yandexMapsService';
 import { Button, Card, Badge, Stars } from './components/ui';
+import { Auth } from './components/auth/Auth';
 import { getCityName, formatDate, formatTime } from './utils/helpers';
 
 // --- Review Modal ---
@@ -2161,51 +2162,7 @@ const UserProfileView = ({ userId, currentUser }: { userId: string; currentUser:
   );
 };
 
-const Auth = ({ onLogin, loading }: { onLogin: (email: string) => void; loading: boolean }) => {
-  const [email, setEmail] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.includes('@')) {
-      onLogin(email);
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-6 relative overflow-hidden">
-      {/* Background Decorations */}
-      <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float delay-1000"></div>
-
-      <div className="z-10 w-full max-w-sm text-center">
-        <div className="mb-8 inline-block p-4 bg-white/50 rounded-full backdrop-blur-md shadow-lg">
-          <Car size={48} className="text-sky-500" />
-        </div>
-        <h1 className="text-4xl font-light text-slate-800 mb-2">{APP_NAME}</h1>
-        <p className="text-slate-500 mb-8">Поездки между Москвой и Липецком.</p>
-
-        <Card className="text-left">
-          <form onSubmit={handleSubmit}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Корпоративная почта
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="name@nlmk.com"
-              className="w-full p-3 bg-gray-50 rounded-xl mb-4 focus:ring-2 focus:ring-sky-200 outline-none"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <Button className="w-full" loading={loading}>
-              Войти
-            </Button>
-          </form>
-        </Card>
-      </div>
-    </div>
-  );
-};
+// Auth component imported from components/auth/Auth.tsx
 
 // --- Layout ---
 
@@ -2624,6 +2581,26 @@ export default function App() {
     }
   };
 
+  const handleTelegramLogin = async (telegramData: {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+    auth_date: number;
+    hash: string;
+  }) => {
+    setLoading(true);
+    try {
+      const u = await api.loginWithTelegram(telegramData);
+      setUser(u);
+    } catch (error) {
+      alert(`Ошибка входа через Telegram: ${getErrorMessage(error, 'не удалось войти')}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     api.logout();
     setUser(null);
@@ -2757,7 +2734,7 @@ export default function App() {
   };
 
   if (!user) {
-    return <Auth onLogin={handleLogin} loading={loading} />;
+    return <Auth onLogin={handleLogin} onTelegramLogin={handleTelegramLogin} loading={loading} />;
   }
 
   return (
