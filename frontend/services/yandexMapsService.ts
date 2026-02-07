@@ -30,6 +30,60 @@ export interface RouteData {
   coordinates: [number, number][]; // массив [lng, lat]
 }
 
+export interface YandexMapInstance {
+  addChild: (child: unknown) => void;
+  removeChild: (child: unknown) => void;
+  destroy: () => void;
+  setLocation: (location: { center: [number, number]; zoom: number; duration?: number }) => void;
+}
+
+export interface YandexMapsApi {
+  ready: Promise<void>;
+  YMap: new (
+    container: HTMLElement,
+    options: { location: { center: [number, number]; zoom: number } }
+  ) => YandexMapInstance;
+  YMapDefaultSchemeLayer: new (options: Record<string, never>) => unknown;
+  YMapDefaultFeaturesLayer: new (options: Record<string, never>) => unknown;
+  YMapMarker: new (options: { coordinates: [number, number] }, element: HTMLElement) => unknown;
+  YMapListener: new (options: {
+    onClick?: (object: unknown, event: { coordinates?: [number, number] }) => void;
+  }) => unknown;
+}
+
+type YandexGeocoderResponse = {
+  response?: {
+    GeoObjectCollection?: {
+      featureMember?: Array<{
+        GeoObject?: {
+          name?: string;
+          description?: string;
+          Point?: { pos?: string };
+          metaDataProperty?: {
+            GeocoderMetaData?: {
+              text?: string;
+            };
+          };
+        };
+      }>;
+    };
+  };
+};
+
+type YandexRouteResponse = {
+  route?: {
+    legs?: Array<{
+      length?: { value?: number };
+      duration?: { value?: number };
+      steps?: Array<{
+        polyline?: {
+          coordinates?: [number, number][];
+        };
+      }>;
+    }>;
+  };
+};
+
 // ============ CITY BOUNDS ============
 
 export const CITY_BOUNDS: Record<
@@ -54,7 +108,7 @@ export const CITY_BOUNDS: Record<
 
 // ============ STATE ============
 
-let ymapsInstance: any = null;
+let ymapsInstance: YandexMapsApi | null = null;
 let isLoading = false;
 let loadPromise: Promise<void> | null = null;
 
@@ -75,9 +129,11 @@ export async function loadYandexMapsScript(apiKey: string): Promise<void> {
   isLoading = true;
 
   loadPromise = new Promise((resolve, reject) => {
+    const globalWindow = window as Window & { ymaps3?: YandexMapsApi };
+
     // Проверяем, не загружен ли уже скрипт
-    if ((window as any).ymaps3) {
-      ymapsInstance = (window as any).ymaps3;
+    if (globalWindow.ymaps3) {
+      ymapsInstance = globalWindow.ymaps3;
       isLoading = false;
       resolve();
       return;
@@ -90,8 +146,11 @@ export async function loadYandexMapsScript(apiKey: string): Promise<void> {
     script.onload = async () => {
       try {
         // Ждём инициализации ymaps3
-        await (window as any).ymaps3.ready;
-        ymapsInstance = (window as any).ymaps3;
+        if (!globalWindow.ymaps3) {
+          throw new Error('Yandex Maps API did not initialize');
+        }
+        await globalWindow.ymaps3.ready;
+        ymapsInstance = globalWindow.ymaps3;
         isLoading = false;
         resolve();
       } catch (error) {
@@ -114,7 +173,7 @@ export async function loadYandexMapsScript(apiKey: string): Promise<void> {
 /**
  * Получить инстанс ymaps
  */
-export function getYmaps(): any {
+export function getYmaps(): YandexMapsApi | null {
   return ymapsInstance;
 }
 
@@ -161,10 +220,10 @@ export async function searchAddress(query: string, city: City): Promise<SuggestI
       throw new Error('Geocoder request failed');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as YandexGeocoderResponse;
     const featureMembers = data.response?.GeoObjectCollection?.featureMember || [];
 
-    return featureMembers.map((item: any) => {
+    return featureMembers.map(item => {
       const geoObject = item.GeoObject;
       const point = geoObject.Point?.pos?.split(' ');
 
@@ -204,7 +263,7 @@ export async function getAddressFromCoords(lat: number, lng: number): Promise<st
       throw new Error('Reverse geocoder request failed');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as YandexGeocoderResponse;
     const geoObject = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
 
     if (geoObject) {
@@ -250,14 +309,14 @@ export async function getRoute(from: Coords, to: Coords): Promise<RouteData | nu
       };
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as YandexRouteResponse;
     const route = data.route?.legs?.[0];
 
     if (route) {
       return {
         distance: route.length?.value || 0,
         duration: route.duration?.value || 0,
-        coordinates: route.steps?.flatMap((step: any) => step.polyline?.coordinates || []) || [
+        coordinates: route.steps?.flatMap(step => step.polyline?.coordinates || []) || [
           [from.lng, from.lat],
           [to.lng, to.lat],
         ],

@@ -89,10 +89,6 @@ export function LocationInput({
 
   // Выбор подсказки
   const handleSelectSuggestion = (suggestion: SuggestItem) => {
-    const fullAddress = suggestion.subtitle
-      ? `${suggestion.title}, ${suggestion.subtitle}`
-      : suggestion.title;
-
     setInputValue(suggestion.title);
     setSuggestions([]);
     setIsFocused(false);

@@ -5,6 +5,16 @@
 
 import { Trip, User, Review, PendingReview, PassengerRequest, RequestStats } from '../types';
 
+interface Booking {
+  id: string;
+  tripId: string;
+  passengerId: string;
+  createdAt?: string;
+  status?: string;
+  trip?: Trip;
+  passenger?: User;
+}
+
 // ============ CONFIGURATION ============
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -203,7 +213,7 @@ export const api = {
     try {
       const { user } = await request<{ user: User }>('/auth/me');
       return user;
-    } catch (error) {
+    } catch {
       // Token invalid and refresh failed
       removeTokens();
       return null;
@@ -370,8 +380,8 @@ export const api = {
   /**
    * Получить мои бронирования
    */
-  async getMyBookings(): Promise<any[]> {
-    const { bookings } = await request<{ bookings: any[] }>('/bookings/my');
+  async getMyBookings(): Promise<Booking[]> {
+    const { bookings } = await request<{ bookings: Booking[] }>('/bookings/my');
     return bookings;
   },
 

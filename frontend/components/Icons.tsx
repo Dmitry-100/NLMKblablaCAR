@@ -12,8 +12,6 @@ import {
   MessageSquareOff,
   ThermometerSun,
   Wind,
-  Car,
-  User,
 } from 'lucide-react';
 import { Preferences, MusicPref, BaggageSize, ConversationPref } from '../types';
 

@@ -57,16 +57,17 @@ export const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
     }
 
     // Append script to container
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-      containerRef.current.appendChild(script);
+    const container = containerRef.current;
+    if (container) {
+      container.innerHTML = '';
+      container.appendChild(script);
     }
 
     // Cleanup
     return () => {
       delete (window as unknown as Record<string, unknown>)[callbackName];
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (container) {
+        container.innerHTML = '';
       }
     };
   }, [botName, buttonSize, cornerRadius, onAuth, requestAccess, showUserPhoto]);

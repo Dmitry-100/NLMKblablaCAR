@@ -1,27 +1,31 @@
-import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import express from 'express';
+import { describe, it, expect, vi } from 'vitest';
+import { Request, Response } from 'express';
 
-// Create a minimal express app for testing
-const app = express();
-
-app.get('/api/health', (req, res) => {
+const healthHandler = (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+};
+
+function createMockResponse() {
+  const json = vi.fn();
+  const res = { json } as unknown as Response;
+  return { res, json };
+}
 
 describe('Health Check API', () => {
   it('should return status ok', async () => {
-    const response = await request(app).get('/api/health');
+    const { res, json } = createMockResponse();
+    healthHandler({} as Request, res);
+    const payload = json.mock.calls[0]?.[0];
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('status', 'ok');
-    expect(response.body).toHaveProperty('timestamp');
+    expect(payload).toHaveProperty('status', 'ok');
+    expect(payload).toHaveProperty('timestamp');
   });
 
   it('should return valid ISO timestamp', async () => {
-    const response = await request(app).get('/api/health');
-
-    const timestamp = new Date(response.body.timestamp);
+    const { res, json } = createMockResponse();
+    healthHandler({} as Request, res);
+    const payload = json.mock.calls[0]?.[0];
+    const timestamp = new Date(payload.timestamp);
     expect(timestamp).toBeInstanceOf(Date);
     expect(isNaN(timestamp.getTime())).toBe(false);
   });

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { X, Star, MapPin, Calendar } from 'lucide-react';
-import { User, PendingReview } from '../../types';
-import { Button } from '../ui/Button';
-import { Stars } from '../ui/Stars';
-import { Avatar } from '../ui/Avatar';
+import { Calendar, MapPin, Star, X } from 'lucide-react';
+import { Avatar, Button, Stars } from '../../components/ui';
+import { PendingReview, User } from '../../types';
 import { formatDate } from '../../utils/helpers';
 
 interface ReviewModalProps {
@@ -15,14 +13,14 @@ interface ReviewModalProps {
   onSkip: () => Promise<void>;
 }
 
-export const ReviewModal: React.FC<ReviewModalProps> = ({
+export function ReviewModal({
   isOpen,
   onClose,
   trip,
   targetUser,
   onSubmit,
   onSkip,
-}) => {
+}: ReviewModalProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,7 +56,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           </button>
         </div>
 
-        {/* Trip info */}
         <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <MapPin size={14} className="text-sky-400" />
@@ -75,7 +72,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           </div>
         </div>
 
-        {/* Target user */}
         <div className="flex items-center gap-4 mb-6">
           <Avatar
             src={targetUser.avatarUrl}
@@ -91,7 +87,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           </div>
         </div>
 
-        {/* Rating */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">Оценка</label>
           <div className="flex justify-center">
@@ -99,7 +94,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           </div>
         </div>
 
-        {/* Comment */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Комментарий <span className="text-gray-400">(необязательно)</span>
@@ -114,7 +108,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
           <Button variant="ghost" onClick={handleSkip} loading={isSkipping} className="flex-1">
             Пропустить
@@ -126,4 +119,4 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       </div>
     </div>
   );
-};
+}

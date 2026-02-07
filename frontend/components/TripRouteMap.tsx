@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { City } from '../types';
 import { useYandexMaps } from '../services/YandexMapsProvider';
-import { CITY_BOUNDS, Coords } from '../services/yandexMapsService';
+import { Coords, YandexMapInstance } from '../services/yandexMapsService';
 
 // ============ TYPES ============
 
@@ -29,14 +29,14 @@ export function TripRouteMap({
   dropoffLocation,
   pickupCoords,
   dropoffCoords,
-  fromCity,
-  toCity,
+  fromCity: _fromCity,
+  toCity: _toCity,
   className = '',
   onClick,
 }: TripRouteMapProps) {
   const { isLoaded, ymaps } = useYandexMaps();
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<YandexMapInstance | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
 
@@ -55,8 +55,6 @@ export function TripRouteMap({
       return;
     }
 
-    let map: any = null;
-
     const initMap = async () => {
       try {
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } = ymaps;
@@ -72,7 +70,7 @@ export function TripRouteMap({
         );
         const zoom = distance > 1 ? 8 : distance > 0.1 ? 11 : 14;
 
-        map = new YMap(mapContainerRef.current, {
+        const map = new YMap(mapContainerRef.current, {
           location: {
             center: [centerLng, centerLat],
             zoom: zoom,

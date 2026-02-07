@@ -12,6 +12,7 @@ import {
   getAddressFromCoords,
   LocationData,
   Coords,
+  YandexMapInstance,
 } from '../services/yandexMapsService';
 
 // ============ TYPES ============
@@ -29,8 +30,8 @@ interface MapPickerProps {
 export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: MapPickerProps) {
   const { isLoaded, ymaps } = useYandexMaps();
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapRef = useRef<YandexMapInstance | null>(null);
+  const markerRef = useRef<unknown>(null);
 
   const [selectedCoords, setSelectedCoords] = useState<Coords | null>(
     initialLocation?.lat && initialLocation?.lng
@@ -120,19 +121,17 @@ export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: 
       return;
     }
 
-    let map: any = null;
-
     const initMap = async () => {
       try {
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapListener } = ymaps;
 
         // Начальный центр: из initialLocation или центр города
-        const initialCenter =
+        const initialCenter: [number, number] =
           initialLocation?.lat && initialLocation?.lng
             ? [initialLocation.lng, initialLocation.lat]
             : [cityBounds.center[1], cityBounds.center[0]];
 
-        map = new YMap(mapContainerRef.current, {
+        const map = new YMap(mapContainerRef.current, {
           location: {
             center: initialCenter,
             zoom: 13,
@@ -144,7 +143,7 @@ export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: 
 
         // Обработчик кликов
         const listener = new YMapListener({
-          onClick: (object: any, event: any) => {
+          onClick: (_object: unknown, event: { coordinates?: [number, number] }) => {
             // В Yandex Maps API v3 координаты в event.coordinates
             const coordinates = event?.coordinates;
             if (coordinates && Array.isArray(coordinates)) {

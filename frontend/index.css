@@ -1,5 +1,41 @@
 @import 'tailwindcss';
 
+:root {
+  color-scheme: light;
+  --app-bg: linear-gradient(135deg, #e0f7fa 0%, #ffffff 50%, #fce4ec 100%);
+  --app-text: #0f172a;
+  --app-text-muted: #64748b;
+  --app-surface: rgba(255, 255, 255, 0.82);
+  --app-surface-strong: #ffffff;
+  --app-surface-soft: #f8fafc;
+  --app-border: #e2e8f0;
+  --app-shadow: 0 12px 30px rgba(14, 116, 144, 0.12);
+  --app-chip: #e0f2fe;
+  --app-chip-text: #0369a1;
+  --app-skeleton: rgba(148, 163, 184, 0.32);
+  --app-scrollbar: #cbd5e1;
+}
+
+.theme-light {
+  color-scheme: light;
+}
+
+.theme-dark {
+  color-scheme: dark;
+  --app-bg: radial-gradient(circle at 20% 20%, #1f2937 0%, #0b1220 45%, #05070d 100%);
+  --app-text: #e5e7eb;
+  --app-text-muted: #94a3b8;
+  --app-surface: rgba(15, 23, 42, 0.82);
+  --app-surface-strong: #111827;
+  --app-surface-soft: #1e293b;
+  --app-border: #334155;
+  --app-shadow: 0 18px 32px rgba(2, 6, 23, 0.45);
+  --app-chip: #1e3a8a;
+  --app-chip-text: #bfdbfe;
+  --app-skeleton: rgba(71, 85, 105, 0.58);
+  --app-scrollbar: #475569;
+}
+
 body {
   font-family:
     'Inter',
@@ -10,9 +46,82 @@ body {
     Helvetica,
     Arial,
     sans-serif;
-  background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 50%, #fce4ec 100%);
+  background: var(--app-bg);
   background-attachment: fixed;
   min-height: 100vh;
+  color: var(--app-text);
+}
+
+.app-surface {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+.app-surface-strong {
+  background: var(--app-surface-strong);
+  border-color: var(--app-border);
+}
+
+.app-surface-soft {
+  background: var(--app-surface-soft);
+}
+
+.app-text {
+  color: var(--app-text);
+}
+
+.app-text-muted {
+  color: var(--app-text-muted);
+}
+
+.app-chip {
+  background: var(--app-chip);
+  color: var(--app-chip-text);
+}
+
+.theme-dark .dark-surface-fallback {
+  border-color: var(--app-border) !important;
+  background-color: var(--app-surface) !important;
+}
+
+.theme-dark .bg-white,
+.theme-dark .bg-white\/60,
+.theme-dark .bg-white\/70,
+.theme-dark .bg-white\/90 {
+  background-color: #111827 !important;
+}
+
+.theme-dark .bg-gray-50 {
+  background-color: #1f2937 !important;
+}
+
+.theme-dark .border-gray-100,
+.theme-dark .border-gray-200,
+.theme-dark .border-slate-100 {
+  border-color: #334155 !important;
+}
+
+.theme-dark .text-gray-800,
+.theme-dark .text-slate-800,
+.theme-dark .text-gray-900 {
+  color: #f3f4f6 !important;
+}
+
+.theme-dark .text-gray-700,
+.theme-dark .text-slate-700 {
+  color: #e5e7eb !important;
+}
+
+.theme-dark .text-gray-600,
+.theme-dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.theme-dark .text-gray-500,
+.theme-dark .text-slate-500,
+.theme-dark .text-gray-400,
+.theme-dark .text-slate-400 {
+  color: #94a3b8 !important;
 }
 
 /* Custom Scrollbar for a cleaner look */
@@ -23,6 +132,120 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--app-scrollbar);
   border-radius: 10px;
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  animation: skeleton-slide 1.2s ease-in-out infinite;
+}
+
+.ui-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow);
+}
+
+.ui-btn-primary {
+  background: linear-gradient(90deg, #38bdf8, #3b82f6);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.25);
+}
+
+.ui-btn-secondary {
+  background: var(--app-surface-strong);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+}
+
+.ui-btn-ghost {
+  color: var(--app-text-muted);
+}
+
+.ui-btn-ghost:hover {
+  background: color-mix(in srgb, var(--app-surface-soft) 86%, transparent);
+  color: var(--app-text);
+}
+
+.ui-btn-danger {
+  background: color-mix(in srgb, #f87171 20%, var(--app-surface-strong));
+  color: #ef4444;
+}
+
+.ui-btn-success {
+  background: color-mix(in srgb, #4ade80 18%, var(--app-surface-strong));
+  color: #16a34a;
+  border: 1px solid color-mix(in srgb, #22c55e 55%, var(--app-border));
+}
+
+.ui-badge-blue {
+  background: color-mix(in srgb, #38bdf8 20%, var(--app-surface-strong));
+  color: #0369a1;
+}
+
+.ui-badge-pink {
+  background: color-mix(in srgb, #f472b6 20%, var(--app-surface-strong));
+  color: #be185d;
+}
+
+.ui-badge-green {
+  background: color-mix(in srgb, #4ade80 20%, var(--app-surface-strong));
+  color: #15803d;
+}
+
+.ui-badge-gray {
+  background: color-mix(in srgb, #94a3b8 22%, var(--app-surface-strong));
+  color: var(--app-text-muted);
+}
+
+.theme-dark .ui-badge-blue {
+  color: #bfdbfe;
+}
+
+.theme-dark .ui-badge-pink {
+  color: #fbcfe8;
+}
+
+.theme-dark .ui-badge-green {
+  color: #bbf7d0;
+}
+
+.confetti-layer {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes skeleton-slide {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes confetti-fall {
+  100% {
+    transform: translateY(110vh) rotate(540deg);
+    opacity: 0.1;
+  }
 }

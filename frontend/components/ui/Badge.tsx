@@ -9,10 +9,10 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue' }) => {
   const colors: Record<BadgeColor, string> = {
-    blue: 'bg-sky-100 text-sky-700',
-    pink: 'bg-pink-100 text-pink-700',
-    green: 'bg-green-100 text-green-700',
-    gray: 'bg-gray-100 text-gray-600',
+    blue: 'ui-badge-blue',
+    pink: 'ui-badge-pink',
+    green: 'ui-badge-green',
+    gray: 'ui-badge-gray',
   };
 
   return (

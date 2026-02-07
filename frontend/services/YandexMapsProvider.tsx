@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { loadYandexMapsScript, isYmapsLoaded, getYmaps } from './yandexMapsService';
+import { loadYandexMapsScript, isYmapsLoaded, getYmaps, YandexMapsApi } from './yandexMapsService';
 
 // ============ TYPES ============
 
@@ -12,7 +12,7 @@ interface YandexMapsContextValue {
   isLoaded: boolean;
   isLoading: boolean;
   error: Error | null;
-  ymaps: any;
+  ymaps: YandexMapsApi | null;
 }
 
 interface YandexMapsProviderProps {
@@ -35,7 +35,7 @@ export function YandexMapsProvider({ children, apiKey }: YandexMapsProviderProps
   const [isLoaded, setIsLoaded] = useState(isYmapsLoaded());
   const [isLoading, setIsLoading] = useState(!isYmapsLoaded());
   const [error, setError] = useState<Error | null>(null);
-  const [ymaps, setYmaps] = useState<any>(getYmaps());
+  const [ymaps, setYmaps] = useState<YandexMapsApi | null>(getYmaps());
 
   useEffect(() => {
     const key = apiKey || import.meta.env.VITE_YANDEX_MAPS_API_KEY;
