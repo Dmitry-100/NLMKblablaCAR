@@ -6,30 +6,16 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
 import { UserBasic, TripWithDriver, BookingWithTrip } from '../types/index.js';
+import {
+  updateUserSchema,
+  userBookingsResponseSchema,
+  userProfileResponseSchema,
+  userTripResponseSchema,
+  userTripsResponseSchema,
+} from '../contracts/users.js';
+import { authUserResponseSchema } from '../contracts/auth.js';
 
 const router = Router();
-
-// ============ VALIDATION SCHEMAS ============
-
-const updateUserSchema = z.object({
-  name: z.string().min(2).optional(),
-  avatarUrl: z.string().optional(),
-  phone: z.string().optional(),
-  bio: z.string().max(500).optional(),
-  position: z.string().max(100).optional(),
-  homeCity: z.enum(['Moscow', 'Lipetsk']).optional(),
-  role: z.enum(['Driver', 'Passenger', 'Both']).optional(),
-  defaultPreferences: z
-    .object({
-      music: z.enum(['Quiet', 'Normal', 'Loud']).optional(),
-      smoking: z.boolean().optional(),
-      pets: z.boolean().optional(),
-      baggage: z.enum(['Hand', 'Medium', 'Suitcase']).optional(),
-      conversation: z.enum(['Chatty', 'Quiet']).optional(),
-      ac: z.boolean().optional(),
-    })
-    .optional(),
-});
 
 // ============ ROUTES ============
 
@@ -47,7 +33,8 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
-    res.json({ user: formatUserResponse(user) });
+    const response = userProfileResponseSchema.parse({ user: formatUserResponse(user) });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get user error:');
     res.status(500).json({ error: 'Ошибка получения профиля' });
@@ -94,7 +81,8 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
       data: updateData,
     });
 
-    res.json({ user: formatUserResponse(user) });
+    const response = userProfileResponseSchema.parse({ user: formatUserResponse(user) });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -121,7 +109,8 @@ router.get('/:id/trips', async (req: Request, res: Response) => {
       orderBy: { date: 'desc' },
     });
 
-    res.json({ trips: trips.map(formatTripResponse) });
+    const response = userTripsResponseSchema.parse({ trips: trips.map(formatTripResponse) });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get user trips error:');
     res.status(500).json({ error: 'Ошибка получения поездок' });
@@ -149,7 +138,10 @@ router.get('/:id/bookings', authMiddleware, async (req: Request, res: Response) 
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ bookings: bookings.map(formatBookingResponse) });
+    const response = userBookingsResponseSchema.parse({
+      bookings: bookings.map(formatBookingResponse),
+    });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get user bookings error:');
     res.status(500).json({ error: 'Ошибка получения бронирований' });
@@ -159,7 +151,7 @@ router.get('/:id/bookings', authMiddleware, async (req: Request, res: Response) 
 // ============ HELPERS ============
 
 function formatUserResponse(user: UserBasic) {
-  return {
+  return authUserResponseSchema.parse({
     id: user.id,
     email: user.email,
     name: user.name,
@@ -178,11 +170,11 @@ function formatUserResponse(user: UserBasic) {
       conversation: user.prefConversation,
       ac: user.prefAc,
     },
-  };
+  });
 }
 
 function formatTripResponse(trip: TripWithDriver) {
-  return {
+  return userTripResponseSchema.parse({
     id: trip.id,
     driverId: trip.driverId,
     driver: trip.driver ? formatUserResponse(trip.driver) : null,
@@ -205,7 +197,7 @@ function formatTripResponse(trip: TripWithDriver) {
     comment: trip.comment,
     tripGroupId: trip.tripGroupId,
     isReturn: trip.isReturn,
-  };
+  });
 }
 
 function formatBookingResponse(booking: BookingWithTrip) {

@@ -11,6 +11,7 @@ import {
   Sparkles,
   LogOut,
   ArrowRight,
+  Shield,
 } from 'lucide-react';
 import { APP_NAME } from '../../constants';
 import { RequestStats, Trip, User } from '../../types';
@@ -180,6 +181,15 @@ export function AppLayout({ children, requestStats, user, trips }: AppLayoutProp
           <UserIcon size={24} />
           <span className="text-[10px] mt-1">Профиль</span>
         </Link>
+        {user.accountRole === 'admin' && (
+          <Link
+            to="/admin"
+            className={`flex flex-col items-center ${location.pathname === '/admin' ? 'text-sky-600' : 'text-gray-400'}`}
+          >
+            <Shield size={24} />
+            <span className="text-[10px] mt-1">Admin</span>
+          </Link>
+        )}
       </div>
 
       <div className="hidden md:flex fixed top-0 w-full bg-white/70 backdrop-blur-md z-50 px-8 py-4 justify-between items-center shadow-sm">
@@ -243,6 +253,14 @@ export function AppLayout({ children, requestStats, user, trips }: AppLayoutProp
           >
             Профиль
           </Link>
+          {user.accountRole === 'admin' && (
+            <Link
+              to="/admin"
+              className={`${location.pathname === '/admin' ? 'text-sky-600' : 'text-gray-600'} hover:text-sky-600 flex items-center gap-1`}
+            >
+              Admin <Shield size={16} />
+            </Link>
+          )}
           <ThemeToggle />
         </div>
       </div>

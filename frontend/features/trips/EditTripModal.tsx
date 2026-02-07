@@ -20,6 +20,7 @@ export function EditTripModal({ trip, onSave, onClose }: EditTripModalProps) {
     city: City;
     initialLocation?: LocationData;
   } | null>(null);
+  const passengerSeats = Math.min(3, Math.max(1, (editData.seatsTotal ?? 4) - 1));
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -57,6 +58,22 @@ export function EditTripModal({ trip, onSave, onClose }: EditTripModalProps) {
                 onChange={e => setEditData({ ...editData, time: e.target.value })}
                 className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Свободных мест</label>
+              <select
+                value={passengerSeats}
+                onChange={e => setEditData({ ...editData, seatsTotal: Number(e.target.value) + 1 })}
+                className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+              >
+                <option value={1}>1 место</option>
+                <option value={2}>2 места</option>
+                <option value={3}>3 места</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-400">
+                Укажите число пассажирских мест (без водителя).
+              </p>
             </div>
 
             <LocationInput

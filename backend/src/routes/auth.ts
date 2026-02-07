@@ -10,21 +10,27 @@ import {
   authMiddleware,
 } from '../middleware/auth.js';
 import { UserBasic } from '../types/index.js';
+import {
+  authMeResponseSchema,
+  authSuccessResponseSchema,
+  authUserResponseSchema,
+  loginSchema,
+  refreshTokenSchema,
+  registerSchema,
+} from '../contracts/auth.js';
 
 const router = Router();
+const ADMIN_TELEGRAM_USERNAMES = new Set(['dmitry_100']);
 
-// ============ VALIDATION SCHEMAS ============
+function normalizeTelegramUsername(username?: string | null): string | null {
+  if (!username) return null;
+  return username.replace(/^@/, '').trim().toLowerCase() || null;
+}
 
-const loginSchema = z.object({
-  email: z.string().email('Некорректный email'),
-});
-
-const registerSchema = z.object({
-  email: z.string().email('Некорректный email'),
-  name: z.string().min(2, 'Имя должно быть минимум 2 символа'),
-  homeCity: z.enum(['Moscow', 'Lipetsk']).optional(),
-  role: z.enum(['Driver', 'Passenger', 'Both']).optional(),
-});
+function shouldPromoteToAdminByTelegramUsername(username?: string | null): boolean {
+  const normalized = normalizeTelegramUsername(username);
+  return !!normalized && ADMIN_TELEGRAM_USERNAMES.has(normalized);
+}
 
 // ============ ROUTES ============
 
@@ -59,16 +65,31 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
+
     // Генерируем токены
+    if (
+      user.accountRole !== 'admin' &&
+      shouldPromoteToAdminByTelegramUsername(user.telegramUsername)
+    ) {
+      user = await req.prisma.user.update({
+        where: { id: user.id },
+        data: { accountRole: 'admin' },
+      });
+    }
+
     const accessToken = generateAccessToken(user.id, user.email || '');
     const refreshToken = generateRefreshToken(user.id);
 
     // Возвращаем пользователя и токены
-    res.json({
+    const response = authSuccessResponseSchema.parse({
       accessToken,
       refreshToken,
       user: formatUserResponse(user),
     });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -109,11 +130,12 @@ router.post('/register', async (req: Request, res: Response) => {
     const accessToken = generateAccessToken(user.id, user.email || '');
     const refreshToken = generateRefreshToken(user.id);
 
-    res.status(201).json({
+    const response = authSuccessResponseSchema.parse({
       accessToken,
       refreshToken,
       user: formatUserResponse(user),
     });
+    res.status(201).json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -129,7 +151,7 @@ router.post('/register', async (req: Request, res: Response) => {
  */
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const user = await req.prisma.user.findUnique({
+    let user = await req.prisma.user.findUnique({
       where: { id: req.userId },
     });
 
@@ -137,7 +159,18 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
-    res.json({ user: formatUserResponse(user) });
+    if (
+      user.accountRole !== 'admin' &&
+      shouldPromoteToAdminByTelegramUsername(user.telegramUsername)
+    ) {
+      user = await req.prisma.user.update({
+        where: { id: user.id },
+        data: { accountRole: 'admin' },
+      });
+    }
+
+    const response = authMeResponseSchema.parse({ user: formatUserResponse(user) });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get me error:');
     res.status(500).json({ error: 'Ошибка получения профиля' });
@@ -150,11 +183,7 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
  */
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      return res.status(400).json({ error: 'Refresh token обязателен' });
-    }
+    const { refreshToken } = refreshTokenSchema.parse(req.body);
 
     // Verify refresh token
     const userId = verifyRefreshToken(refreshToken);
@@ -163,7 +192,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     }
 
     // Get user from DB
-    const user = await req.prisma.user.findUnique({
+    let user = await req.prisma.user.findUnique({
       where: { id: userId },
     });
 
@@ -171,16 +200,34 @@ router.post('/refresh', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Пользователь не найден' });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
+
+    if (
+      user.accountRole !== 'admin' &&
+      shouldPromoteToAdminByTelegramUsername(user.telegramUsername)
+    ) {
+      user = await req.prisma.user.update({
+        where: { id: user.id },
+        data: { accountRole: 'admin' },
+      });
+    }
+
     // Generate new tokens
     const newAccessToken = generateAccessToken(user.id, user.email || '');
     const newRefreshToken = generateRefreshToken(user.id);
 
-    res.json({
+    const response = authSuccessResponseSchema.parse({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
       user: formatUserResponse(user),
     });
+    res.json(response);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
     log.error({ err: error }, 'Refresh error:');
     res.status(500).json({ error: 'Ошибка обновления токена' });
   }
@@ -189,7 +236,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
 // ============ HELPERS ============
 
 function formatUserResponse(user: UserBasic) {
-  return {
+  return authUserResponseSchema.parse({
     id: user.id,
     email: user.email,
     name: user.name,
@@ -199,6 +246,8 @@ function formatUserResponse(user: UserBasic) {
     position: user.position || '',
     homeCity: user.homeCity,
     role: user.role,
+    accountRole: user.accountRole as 'user' | 'admin',
+    isBlocked: user.isBlocked,
     rating: user.rating,
     defaultPreferences: {
       music: user.prefMusic,
@@ -208,7 +257,7 @@ function formatUserResponse(user: UserBasic) {
       conversation: user.prefConversation,
       ac: user.prefAc,
     },
-  };
+  });
 }
 
 export default router;

@@ -4,6 +4,27 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
 
+## [2.8.0] - 2026-02-07
+
+### Added — Администрирование и типобезопасность
+
+#### Админ-панель
+- **Admin routes** (`backend/src/routes/admin.ts`) — CRUD для поездок, заявок, пользователей
+- **requireAdmin middleware** — защита админ-эндпоинтов
+- **Авто-назначение роли** — admin по Telegram username
+- Новое поле `accountRole: 'user' | 'admin'` в User
+
+#### Контрактный слой (Type Safety)
+- **backend/src/contracts/** — Zod-схемы для всех сущностей
+- **frontend/contracts/** — зеркальная структура
+- Синхронизация типов между frontend и backend
+- Валидация на обеих сторонах
+
+### Changed
+- Все GitHub issues закрыты (#1-#19)
+- Production Readiness Checklist выполнен
+- README.md полностью обновлён
+
 ## [2.7.0] - 2026-02-07
 
 ### Added — UX и визуализация

@@ -3,6 +3,11 @@ import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 import { optionalAuth } from '../middleware/auth.js';
 import { createLogger } from '../utils/logger.js';
+import {
+  assistantErrorResponseSchema,
+  assistantResponseSchema,
+  assistantSchema,
+} from '../contracts/ai.js';
 
 const router = Router();
 const log = createLogger('ai');
@@ -20,11 +25,6 @@ const SYSTEM_PROMPT = `Ты помощник для приложения NLMKbla
 Если просят комментарий к поездке, предлагай дружелюбные, профессиональные варианты.
 Если спрашивают о приложении, объясни что это сервис для совместных поездок сотрудников НЛМК между Москвой и Липецком.`;
 
-// Validation schema
-const assistantSchema = z.object({
-  prompt: z.string().min(1, 'Промпт обязателен').max(1000, 'Промпт слишком длинный'),
-});
-
 /**
  * POST /api/ai/assistant
  * Get AI assistant response
@@ -36,10 +36,11 @@ router.post('/assistant', optionalAuth, async (req: Request, res: Response) => {
 
     // Check if AI is configured
     if (!ai) {
-      return res.status(503).json({
+      const response = assistantErrorResponseSchema.parse({
         error: 'ИИ-помощник не настроен',
         response: 'ИИ-помощник временно недоступен. Попробуйте позже.',
       });
+      return res.status(503).json(response);
     }
 
     // Generate response
@@ -53,17 +54,19 @@ router.post('/assistant', optionalAuth, async (req: Request, res: Response) => {
 
     const text = response.text || 'Извини, не расслышал. Попробуй еще раз?';
 
-    res.json({ response: text });
+    const payload = assistantResponseSchema.parse({ response: text });
+    res.json(payload);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
 
     log.error({ err: error }, 'AI Assistant error');
-    res.status(500).json({
+    const response = assistantErrorResponseSchema.parse({
       error: 'Ошибка генерации ответа',
       response: 'Связь нестабильна. Попробуйте позже.',
     });
+    res.status(500).json(response);
   }
 });
 

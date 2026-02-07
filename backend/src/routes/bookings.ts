@@ -12,17 +12,18 @@ import {
   BookingWithTrip,
 } from '../types/index.js';
 import { notifyNewBooking, notifyBookingCancelled } from '../services/telegram.js';
+import {
+  bookingResponseSchema,
+  createBookingResponseSchema,
+  createBookingSchema,
+  getBookingResponseSchema,
+  getMyBookingsResponseSchema,
+} from '../contracts/bookings.js';
 
 // Union type for formatBookingResponse
 type BookingForFormatting = BookingWithRelations | BookingWithTrip;
 
 const router = Router();
-
-// ============ VALIDATION SCHEMAS ============
-
-const createBookingSchema = z.object({
-  tripId: z.string().min(1, 'Укажите ID поездки'),
-});
 
 class ApiError extends Error {
   status: number;
@@ -131,10 +132,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       ).catch(err => log.error({ err }, 'Failed to send booking notification'));
     }
 
-    res.status(201).json({
+    const response = createBookingResponseSchema.parse({
       booking: formatBookingResponse(booking),
       message: 'Место успешно забронировано!',
     });
+    res.status(201).json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -163,7 +165,10 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ bookings: bookings.map(formatBookingResponse) });
+    const response = getMyBookingsResponseSchema.parse({
+      bookings: bookings.map(formatBookingResponse),
+    });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get my bookings error:');
     res.status(500).json({ error: 'Ошибка получения бронирований' });
@@ -195,7 +200,10 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Нет доступа к этому бронированию' });
     }
 
-    res.json({ booking: formatBookingResponse(booking) });
+    const response = getBookingResponseSchema.parse({
+      booking: formatBookingResponse(booking),
+    });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get booking error:');
     res.status(500).json({ error: 'Ошибка получения бронирования' });
@@ -299,15 +307,15 @@ function formatUserResponse(user: UserBasic) {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
-    homeCity: user.homeCity,
-    role: user.role,
+    homeCity: user.homeCity as 'Moscow' | 'Lipetsk',
+    role: user.role as 'Driver' | 'Passenger' | 'Both',
     rating: user.rating,
     defaultPreferences: {
-      music: user.prefMusic,
+      music: user.prefMusic as 'Quiet' | 'Normal' | 'Loud',
       smoking: user.prefSmoking,
       pets: user.prefPets,
-      baggage: user.prefBaggage,
-      conversation: user.prefConversation,
+      baggage: user.prefBaggage as 'Hand' | 'Medium' | 'Suitcase',
+      conversation: user.prefConversation as 'Chatty' | 'Quiet',
       ac: user.prefAc,
     },
   };
@@ -318,8 +326,8 @@ function formatTripResponse(trip: TripWithDriver) {
     id: trip.id,
     driverId: trip.driverId,
     driver: trip.driver ? formatUserResponse(trip.driver) : null,
-    from: trip.fromCity,
-    to: trip.toCity,
+    from: trip.fromCity as 'Moscow' | 'Lipetsk',
+    to: trip.toCity as 'Moscow' | 'Lipetsk',
     date: trip.date,
     time: trip.time,
     pickupLocation: trip.pickupLocation,
@@ -327,11 +335,11 @@ function formatTripResponse(trip: TripWithDriver) {
     seatsTotal: trip.seatsTotal,
     seatsBooked: trip.seatsBooked,
     preferences: {
-      music: trip.prefMusic,
+      music: trip.prefMusic as 'Quiet' | 'Normal' | 'Loud',
       smoking: trip.prefSmoking,
       pets: trip.prefPets,
-      baggage: trip.prefBaggage,
-      conversation: trip.prefConversation,
+      baggage: trip.prefBaggage as 'Hand' | 'Medium' | 'Suitcase',
+      conversation: trip.prefConversation as 'Chatty' | 'Quiet',
       ac: trip.prefAc,
     },
     comment: trip.comment,
@@ -342,15 +350,15 @@ function formatTripResponse(trip: TripWithDriver) {
 
 function formatBookingResponse(booking: BookingForFormatting) {
   const passenger = 'passenger' in booking ? booking.passenger : null;
-  return {
+  return bookingResponseSchema.parse({
     id: booking.id,
     tripId: booking.tripId,
     trip: booking.trip ? formatTripResponse(booking.trip) : null,
     passengerId: booking.passengerId,
     passenger: passenger ? formatUserResponse(passenger) : null,
-    status: booking.status,
+    status: booking.status as 'confirmed' | 'cancelled',
     createdAt: booking.createdAt,
-  };
+  });
 }
 
 export default router;

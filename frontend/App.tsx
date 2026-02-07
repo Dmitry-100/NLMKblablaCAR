@@ -12,6 +12,7 @@ import { InsightsPeriodProvider, StatsDashboard, TripsCalendar } from './feature
 import { CreateRequest, CreateRequestPayload, RequestsList } from './features/requests';
 import { Profile, UserProfileWrapper } from './features/profile';
 import { CreateTrip, EditTripModal, Schedule } from './features/trips';
+import { AdminPanel } from './features/admin';
 
 export default function App() {
   const queryClient = useQueryClient();
@@ -305,6 +306,9 @@ export default function App() {
               <Route path="/calendar" element={<TripsCalendar trips={trips} user={user} />} />
               <Route path="/dashboard" element={<StatsDashboard trips={trips} user={user} />} />
               <Route path="/user/:userId" element={<UserProfileWrapper />} />
+              {user.accountRole === 'admin' && (
+                <Route path="/admin" element={<AdminPanel currentUser={user} />} />
+              )}
             </Routes>
           </AppLayout>
 

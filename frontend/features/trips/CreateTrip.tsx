@@ -29,7 +29,7 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
     to: City.Lipetsk,
     date: '',
     time: '',
-    seatsTotal: 3,
+    seatsTotal: 4,
     pickupLocation: '',
     dropoffLocation: '',
     comment: '',
@@ -41,7 +41,7 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
     to: City.Moscow,
     date: '',
     time: '',
-    seatsTotal: 3,
+    seatsTotal: 4,
     pickupLocation: '',
     dropoffLocation: '',
     comment: '',
@@ -50,6 +50,8 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
   });
 
   const [hasReturn, setHasReturn] = useState(true);
+  const outboundPassengerSeats = Math.min(3, Math.max(1, (outbound.seatsTotal ?? 4) - 1));
+  const returnPassengerSeats = Math.min(3, Math.max(1, (returnTrip.seatsTotal ?? 4) - 1));
 
   const handleSubmit = async () => {
     const groupId = `g-${Date.now()}`;
@@ -165,6 +167,22 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
           </div>
         </div>
 
+        <div className="mb-4">
+          <label className="text-xs text-gray-400 block mb-1">Свободных мест</label>
+          <select
+            value={outboundPassengerSeats}
+            className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+            onChange={e => setOutbound({ ...outbound, seatsTotal: Number(e.target.value) + 1 })}
+          >
+            <option value={1}>1 место</option>
+            <option value={2}>2 места</option>
+            <option value={3}>3 места</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-400">
+            Укажите число пассажирских мест (без водителя).
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <LocationInput
             value={outbound.pickupLocation || ''}
@@ -272,6 +290,24 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="text-xs text-gray-400 block mb-1">Свободных мест</label>
+            <select
+              value={returnPassengerSeats}
+              className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+              onChange={e =>
+                setReturnTrip({ ...returnTrip, seatsTotal: Number(e.target.value) + 1 })
+              }
+            >
+              <option value={1}>1 место</option>
+              <option value={2}>2 места</option>
+              <option value={3}>3 места</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Укажите число пассажирских мест (без водителя).
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

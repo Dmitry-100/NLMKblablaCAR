@@ -6,6 +6,15 @@ import { z } from 'zod';
 import { PrismaClient, Review } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
 import {
+  createReviewResponseSchema,
+  createReviewSchema,
+  pendingReviewsResponseSchema,
+  reviewResponseSchema,
+  skipReviewResponseSchema,
+  skipReviewSchema,
+  userReviewsResponseSchema,
+} from '../contracts/reviews.js';
+import {
   UserBasic,
   ReviewWithRelations,
   ReviewWithAuthorTarget,
@@ -22,20 +31,6 @@ interface TripForValidation {
 type ReviewForFormatting = ReviewWithRelations | ReviewWithAuthorTarget | ReviewWithAuthorTrip;
 
 const router = Router();
-
-// ============ VALIDATION SCHEMAS ============
-
-const createReviewSchema = z.object({
-  tripId: z.string().min(1, 'Укажите ID поездки'),
-  targetUserId: z.string().min(1, 'Укажите ID пользователя'),
-  rating: z.number().int().min(1).max(5),
-  comment: z.string().max(500).optional().default(''),
-});
-
-const skipReviewSchema = z.object({
-  tripId: z.string().min(1, 'Укажите ID поездки'),
-  targetUserId: z.string().min(1, 'Укажите ID пользователя'),
-});
 
 // ============ HELPERS ============
 
@@ -65,7 +60,7 @@ function formatUserResponse(user: UserBasic): UserResponse {
 function formatReviewResponse(review: ReviewForFormatting) {
   const author = 'author' in review ? review.author : null;
   const target = 'target' in review ? review.target : null;
-  return {
+  return reviewResponseSchema.parse({
     id: review.id,
     tripId: review.tripId,
     authorId: review.authorId,
@@ -76,7 +71,7 @@ function formatReviewResponse(review: ReviewForFormatting) {
     comment: review.comment,
     skipped: review.skipped,
     createdAt: review.createdAt,
-  };
+  });
 }
 
 /**
@@ -241,7 +236,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     // 8. Проверяем, нужно ли архивировать поездку
     await checkAndArchiveTrip(req.prisma, tripId);
 
-    res.status(201).json({ review: formatReviewResponse(review) });
+    const response = createReviewResponseSchema.parse({ review: formatReviewResponse(review) });
+    res.status(201).json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -321,7 +317,8 @@ router.post('/skip', authMiddleware, async (req: Request, res: Response) => {
     // Проверяем, нужно ли архивировать поездку
     await checkAndArchiveTrip(req.prisma, tripId);
 
-    res.json({ success: true, message: 'Отзыв пропущен' });
+    const response = skipReviewResponseSchema.parse({ success: true, message: 'Отзыв пропущен' });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -404,7 +401,8 @@ router.get('/pending', authMiddleware, async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ pendingReviews });
+    const response = pendingReviewsResponseSchema.parse({ pendingReviews });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get pending reviews error:');
     res.status(500).json({ error: 'Ошибка получения списка поездок для отзыва' });
@@ -431,9 +429,10 @@ router.get('/user/:id', async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({
+    const response = userReviewsResponseSchema.parse({
       reviews: reviews.map(formatReviewResponse),
     });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get user reviews error:');
     res.status(500).json({ error: 'Ошибка получения отзывов' });

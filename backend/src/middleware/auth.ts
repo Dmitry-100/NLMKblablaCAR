@@ -31,6 +31,19 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     req.userId = decoded.userId;
 
+    const user = await req.prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, isBlocked: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Пользователь не найден' });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
+
     next();
   } catch {
     return res.status(401).json({ error: 'Недействительный токен' });
@@ -80,5 +93,34 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
   } catch {
     // Игнорируем ошибки токена, просто не устанавливаем userId
     next();
+  }
+};
+
+export const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+
+    const user = await req.prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { accountRole: true, isBlocked: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Пользователь не найден' });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
+
+    if (user.accountRole !== 'admin') {
+      return res.status(403).json({ error: 'Требуются права администратора' });
+    }
+
+    next();
+  } catch {
+    return res.status(500).json({ error: 'Ошибка проверки прав доступа' });
   }
 };

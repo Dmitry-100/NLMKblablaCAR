@@ -11,6 +11,7 @@ import reviewsRoutes from './routes/reviews.js';
 import aiRoutes from './routes/ai.js';
 import requestsRoutes from './routes/requests.js';
 import telegramRoutes from './routes/telegram.js';
+import adminRoutes from './routes/admin.js';
 import { createLogger } from './utils/logger.js';
 
 const log = createLogger('server');
@@ -84,6 +85,7 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/requests', requestsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ============ ERROR HANDLING ============
 

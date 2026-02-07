@@ -4,90 +4,25 @@ import { Prisma } from '@prisma/client';
 import { authMiddleware, optionalAuth } from '../middleware/auth.js';
 import { createLogger } from '../utils/logger.js';
 import { UserBasic, RequestWithRelations, RequestWithRequester } from '../types/index.js';
+import {
+  createRequestResponseSchema,
+  createRequestSchema,
+  getRequestResponseSchema,
+  getRequestsResponseSchema,
+  linkRequestResponseSchema,
+  matchingRequestsQuerySchema,
+  requestResponseSchema,
+  requestStatsResponseSchema,
+  requestsQuerySchema,
+  updateRequestResponseSchema,
+  updateRequestSchema,
+} from '../contracts/requests.js';
 
 // Union type for formatRequestResponse
 type RequestForFormatting = RequestWithRelations | RequestWithRequester;
 
 const router = Router();
 const log = createLogger('requests');
-
-// ============ VALIDATION SCHEMAS ============
-
-const createRequestSchema = z
-  .object({
-    from: z.enum(['Moscow', 'Lipetsk']),
-    to: z.enum(['Moscow', 'Lipetsk']),
-    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Формат даты: YYYY-MM-DD'),
-    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Формат даты: YYYY-MM-DD'),
-    timePreferred: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, 'Формат времени: HH:mm')
-      .optional(),
-    passengersCount: z.number().int().min(1).max(3).default(1),
-    comment: z.string().max(500).optional().default(''),
-    preferences: z
-      .object({
-        music: z.enum(['Quiet', 'Normal', 'Loud']).optional(),
-        smoking: z.boolean().optional(),
-        pets: z.boolean().optional(),
-        baggage: z.enum(['Hand', 'Medium', 'Suitcase']).optional(),
-        conversation: z.enum(['Chatty', 'Quiet']).optional(),
-        ac: z.boolean().optional(),
-      })
-      .optional(),
-  })
-  .refine(data => data.from !== data.to, {
-    message: 'Города отправления и назначения должны отличаться',
-  })
-  .refine(data => data.dateFrom <= data.dateTo, {
-    message: 'Дата "от" должна быть не позже даты "до"',
-  });
-
-const updateRequestSchema = z.object({
-  dateFrom: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  dateTo: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  timePreferred: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional()
-    .nullable(),
-  passengersCount: z.number().int().min(1).max(3).optional(),
-  comment: z.string().max(500).optional(),
-  preferences: z
-    .object({
-      music: z.enum(['Quiet', 'Normal', 'Loud']).optional(),
-      smoking: z.boolean().optional(),
-      pets: z.boolean().optional(),
-      baggage: z.enum(['Hand', 'Medium', 'Suitcase']).optional(),
-      conversation: z.enum(['Chatty', 'Quiet']).optional(),
-      ac: z.boolean().optional(),
-    })
-    .optional(),
-});
-
-const querySchema = z.object({
-  from: z.enum(['Moscow', 'Lipetsk']).optional(),
-  to: z.enum(['Moscow', 'Lipetsk']).optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  status: z.enum(['pending', 'fulfilled', 'cancelled', 'expired']).optional(),
-});
-
-const matchingQuerySchema = z.object({
-  from: z.enum(['Moscow', 'Lipetsk']),
-  to: z.enum(['Moscow', 'Lipetsk']),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  seatsAvailable: z
-    .string()
-    .transform(val => parseInt(val, 10))
-    .optional(),
-});
 
 // ============ ROUTES ============
 
@@ -97,7 +32,7 @@ const matchingQuerySchema = z.object({
  */
 router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const query = querySchema.parse(req.query);
+    const query = requestsQuerySchema.parse(req.query);
 
     const where: Prisma.PassengerRequestWhereInput = {};
 
@@ -128,7 +63,10 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       orderBy: [{ dateFrom: 'asc' }, { createdAt: 'desc' }],
     });
 
-    res.json({ requests: requests.map(r => formatRequestResponse(r)) });
+    const response = getRequestsResponseSchema.parse({
+      requests: requests.map(r => formatRequestResponse(r)),
+    });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -155,7 +93,10 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ requests: requests.map(r => formatRequestResponse(r)) });
+    const response = getRequestsResponseSchema.parse({
+      requests: requests.map(r => formatRequestResponse(r)),
+    });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get my requests error');
     res.status(500).json({ error: 'Ошибка получения заявок' });
@@ -189,13 +130,14 @@ router.get('/stats', optionalAuth, async (req: Request, res: Response) => {
       }),
     ]);
 
-    res.json({
+    const response = requestStatsResponseSchema.parse({
       stats: {
         moscowToLipetsk,
         lipetskToMoscow,
         total: moscowToLipetsk + lipetskToMoscow,
       },
     });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get request stats error');
     res.status(500).json({ error: 'Ошибка получения статистики' });
@@ -208,7 +150,7 @@ router.get('/stats', optionalAuth, async (req: Request, res: Response) => {
  */
 router.get('/matching', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const query = matchingQuerySchema.parse(req.query);
+    const query = matchingRequestsQuerySchema.parse(req.query);
 
     const requests = await req.prisma.passengerRequest.findMany({
       where: {
@@ -231,7 +173,10 @@ router.get('/matching', authMiddleware, async (req: Request, res: Response) => {
       ? requests.filter(r => r.passengersCount <= query.seatsAvailable!)
       : requests;
 
-    res.json({ requests: filteredRequests.map(r => formatRequestResponse(r)) });
+    const response = getRequestsResponseSchema.parse({
+      requests: filteredRequests.map(r => formatRequestResponse(r)),
+    });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -261,7 +206,10 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Заявка не найдена' });
     }
 
-    res.json({ request: formatRequestResponse(request) });
+    const response = getRequestResponseSchema.parse({
+      request: formatRequestResponse(request),
+    });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get request error');
     res.status(500).json({ error: 'Ошибка получения заявки' });
@@ -314,7 +262,10 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json({ request: formatRequestResponse(request) });
+    const response = createRequestResponseSchema.parse({
+      request: formatRequestResponse(request),
+    });
+    res.status(201).json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -385,7 +336,10 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
       include: { requester: true },
     });
 
-    res.json({ request: formatRequestResponse(updatedRequest) });
+    const response = updateRequestResponseSchema.parse({
+      request: formatRequestResponse(updatedRequest),
+    });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -489,7 +443,10 @@ router.post('/:id/link', authMiddleware, async (req: Request, res: Response) => 
       },
     });
 
-    res.json({ request: formatRequestResponse(updatedRequest) });
+    const response = linkRequestResponseSchema.parse({
+      request: formatRequestResponse(updatedRequest),
+    });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -510,15 +467,15 @@ function formatUserResponse(user: UserBasic) {
     phone: user.phone || '',
     bio: user.bio || '',
     position: user.position || '',
-    homeCity: user.homeCity,
-    role: user.role,
+    homeCity: user.homeCity as 'Moscow' | 'Lipetsk',
+    role: user.role as 'Driver' | 'Passenger' | 'Both',
     rating: user.rating,
     defaultPreferences: {
-      music: user.prefMusic,
+      music: user.prefMusic as 'Quiet' | 'Normal' | 'Loud',
       smoking: user.prefSmoking,
       pets: user.prefPets,
-      baggage: user.prefBaggage,
-      conversation: user.prefConversation,
+      baggage: user.prefBaggage as 'Hand' | 'Medium' | 'Suitcase',
+      conversation: user.prefConversation as 'Chatty' | 'Quiet',
       ac: user.prefAc,
     },
   };
@@ -526,26 +483,26 @@ function formatUserResponse(user: UserBasic) {
 
 function formatRequestResponse(request: RequestForFormatting) {
   const linkedTrip = 'linkedTrip' in request && request.linkedTrip;
-  return {
+  return requestResponseSchema.parse({
     id: request.id,
     requesterId: request.requesterId,
     requester: request.requester ? formatUserResponse(request.requester) : null,
-    from: request.fromCity,
-    to: request.toCity,
+    from: request.fromCity as 'Moscow' | 'Lipetsk',
+    to: request.toCity as 'Moscow' | 'Lipetsk',
     dateFrom: request.dateFrom,
     dateTo: request.dateTo,
     timePreferred: request.timePreferred,
     passengersCount: request.passengersCount,
     preferences: {
-      music: request.prefMusic,
+      music: request.prefMusic as 'Quiet' | 'Normal' | 'Loud',
       smoking: request.prefSmoking,
       pets: request.prefPets,
-      baggage: request.prefBaggage,
-      conversation: request.prefConversation,
+      baggage: request.prefBaggage as 'Hand' | 'Medium' | 'Suitcase',
+      conversation: request.prefConversation as 'Chatty' | 'Quiet',
       ac: request.prefAc,
     },
     comment: request.comment,
-    status: request.status,
+    status: request.status as 'pending' | 'fulfilled' | 'cancelled' | 'expired',
     linkedTripId: request.linkedTripId,
     linkedTrip: linkedTrip
       ? {
@@ -557,7 +514,7 @@ function formatRequestResponse(request: RequestForFormatting) {
       : null,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
-  };
+  });
 }
 
 export default router;

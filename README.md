@@ -1,838 +1,286 @@
 # NLMKblablaCAR - Корпоративный карпулинг NLMK
 
-## 📋 Обзор проекта
+**Версия:** 2.8.0 | **Обновлено:** 2026-02-07
 
-**NLMKblablaCAR** - полнофункциональная веб-платформа для корпоративного карпулинга между городами Москва и Липецк для сотрудников NLMK.
+## Обзор проекта
 
-### Основная идея
-Сотрудники могут:
-- **Водители** - создавать поездки с указанием маршрута, времени и предпочтений
-- **Пассажиры** - искать подходящие поездки и бронировать места
-- Система автоматически управляет доступными местами и бронированиями
-
-### Ключевые особенности
-- 🔐 Упрощенная авторизация по email (auto-registration)
-- 🚗 Создание и управление поездками
-- 📅 Фильтрация по маршруту и датам
-- ⭐ Система предпочтений (музыка, курение, животные, разговоры)
-- 📱 Адаптивный интерфейс на React
-- 🔄 Real-time обновление доступных мест
-- 🗺️ Интеграция с Яндекс.Картами (автодополнение адресов, выбор точки на карте)
-- 🤖 ИИ-помощник на базе Google Gemini (бесплатный)
-- 🚫 Валидация дат (нельзя создать поездку в прошлом)
-- 📦 Автоархивация прошедших поездок
-- ⭐ Система отзывов после поездок
+**NLMKblablaCAR** — полнофункциональная веб-платформа для корпоративного карпулинга между Москвой и Липецком для сотрудников NLMK.
 
 ### Демо
 - **Frontend:** https://steel-blablacar.netlify.app/
 - **Backend API:** https://nlmkblablacar.onrender.com/api
+- **Telegram бот:** [@SteelBlaBlaCarBot](https://t.me/SteelBlaBlaCarBot)
 
 ---
 
-## 🛠 Технический стек
+## Ключевые возможности
+
+### Для пользователей
+- **Telegram авторизация** — безопасный вход через Telegram Login Widget
+- **Создание поездок** — водители указывают маршрут, время и предпочтения
+- **Заявки пассажиров** — пассажиры создают заявки на нужные даты
+- **Бронирование** — автоматическое управление местами (1-3 пассажира)
+- **Telegram уведомления** — мгновенные оповещения о бронированиях
+- **Система отзывов** — рейтинг и отзывы после поездок
+
+### UX и интерфейс
+- **Тёмная тема** — автоматическая адаптация через CSS-переменные
+- **Дашборд статистики** — графики активности, популярные маршруты
+- **Календарь поездок** — месячный обзор с навигацией
+- **Геймификация** — уровни, достижения, streak-счётчик
+- **Яндекс.Карты** — автодополнение адресов, выбор точки на карте
+- **AI-помощник** — Google Gemini для поиска и рекомендаций
+
+### Для администраторов
+- **Админ-панель** — управление поездками, заявками, пользователями
+- **Роли** — `user` / `admin` с авто-назначением по Telegram username
+
+---
+
+## Технический стек
 
 ### Backend
-```
-- Runtime: Node.js + TypeScript
-- Framework: Express.js 4.21
-- Database ORM: Prisma 5.22
-- Database: PostgreSQL (dev/prod)
-- Authentication: JWT (jsonwebtoken 9.0)
-- Validation: Zod 3.23
-- Security: bcryptjs, CORS
-```
+| Компонент | Технология |
+|-----------|------------|
+| Runtime | Node.js + TypeScript |
+| Framework | Express.js 4.21 |
+| ORM | Prisma 5.22 |
+| Database | PostgreSQL (Neon) |
+| Auth | JWT + Telegram HMAC-SHA256 |
+| Validation | Zod 3.23 |
+| Bot | node-telegram-bot-api |
 
 ### Frontend
-```
-- Framework: React 19.2
-- Build tool: Vite 6.2
-- Routing: React Router DOM 7.10
-- Styling: Tailwind CSS 4.1
-- Icons: Lucide React 0.556
-- Maps: Yandex Maps JavaScript API v3
-- AI Integration: Google Gemini API (@google/genai)
-- Language: TypeScript 5.8
-```
+| Компонент | Технология |
+|-----------|------------|
+| Framework | React 19.2 |
+| Build | Vite 6.2 |
+| Routing | React Router DOM 7.10 |
+| State | TanStack Query 5.x |
+| Styling | Tailwind CSS 4.1 |
+| Maps | Yandex Maps JS API v3 |
+| AI | Google Gemini API |
 
-### DevOps & Deployment
-```
-- Version Control: Git
-- Backend Hosting: Render.com (Free Plan)
-- Frontend Hosting: Netlify
-- Database: PostgreSQL на Render
-- CI/CD: Автоматический деплой через Git
-```
+### Инфраструктура
+| Сервис | Платформа |
+|--------|-----------|
+| Frontend | Netlify |
+| Backend | Render.com |
+| Database | Neon PostgreSQL |
+| Bot | Telegram @SteelBlaBlaCarBot |
 
 ---
 
-## 🏗 Архитектура проекта
-
-### Структура директорий
+## Архитектура проекта
 
 ```
 NLMKblablaCAR/
-├── backend/                    # Backend API (Express + Prisma)
+├── backend/
 │   ├── src/
-│   │   ├── index.ts           # Точка входа сервера
+│   │   ├── index.ts              # Точка входа
 │   │   ├── middleware/
-│   │   │   └── auth.ts        # JWT authentication middleware
-│   │   └── routes/
-│   │       ├── auth.ts        # Авторизация и регистрация
-│   │       ├── users.ts       # Управление пользователями
-│   │       ├── trips.ts       # CRUD поездок
-│   │       └── bookings.ts    # Бронирование мест
-│   ├── prisma/
-│   │   ├── schema.prisma      # Схема базы данных
-│   │   └── dev.db             # (не используется, оставлено для примера)
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env                   # DATABASE_URL, JWT_SECRET
+│   │   │   └── auth.ts           # JWT + requireAdmin
+│   │   ├── routes/
+│   │   │   ├── admin.ts          # Админ-эндпоинты
+│   │   │   ├── auth.ts           # Авторизация
+│   │   │   ├── bookings.ts       # Бронирования
+│   │   │   ├── requests.ts       # Заявки пассажиров
+│   │   │   ├── reviews.ts        # Отзывы
+│   │   │   ├── telegram.ts       # Telegram webhook
+│   │   │   ├── trips.ts          # Поездки
+│   │   │   └── users.ts          # Пользователи
+│   │   ├── contracts/            # Zod-схемы (shared types)
+│   │   └── services/
+│   │       └── telegram.ts       # Уведомления
+│   └── prisma/
+│       └── schema.prisma         # Схема БД
 │
-├── frontend/                   # React приложение
-│   ├── App.tsx                # Главный компонент приложения
-│   ├── index.tsx              # Точка входа React
-│   ├── index.html             # HTML template
-│   ├── services/
-│   │   ├── api.ts             # API клиент
-│   │   ├── geminiService.ts   # Google Gemini интеграция
-│   │   ├── yandexMapsService.ts    # Yandex Maps API сервис
-│   │   └── YandexMapsProvider.tsx  # React Context для карт
+├── frontend/
+│   ├── App.tsx                   # Главный компонент (308 строк)
+│   ├── features/
+│   │   ├── admin/                # Админ-панель
+│   │   ├── insights/             # Статистика и графики
+│   │   ├── layout/               # AppLayout
+│   │   ├── profile/              # Профиль пользователя
+│   │   ├── requests/             # Заявки пассажиров
+│   │   └── trips/                # Поездки
 │   ├── components/
-│   │   ├── Icons.tsx          # Иконки и PreferenceRow
-│   │   ├── LocationInput.tsx  # Поле ввода с автодополнением адресов
-│   │   ├── MapPicker.tsx      # Полноэкранный выбор точки на карте
-│   │   └── TripRouteMap.tsx   # Компактная карта маршрута
-│   ├── types.ts               # TypeScript типы
-│   ├── constants.ts           # Константы приложения
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   └── .env.local             # VITE_API_URL, VITE_YANDEX_MAPS_API_KEY, VITE_GEMINI_API_KEY
+│   │   ├── auth/                 # Telegram Login
+│   │   └── ui/                   # Button, Card, Skeleton...
+│   ├── contracts/                # Zod-схемы (shared types)
+│   ├── services/
+│   │   ├── api.ts                # API клиент
+│   │   └── geminiService.ts      # AI-помощник
+│   └── utils/
+│       ├── gamification.ts       # Уровни и достижения
+│       ├── confetti.ts           # Анимации
+│       └── haptics.ts            # Вибрация
 │
-├── .git/                      # Git репозиторий
-├── .gitignore
-├── README.md
-├── render.yaml                # Конфигурация Render.com
-└── netlify.toml               # Конфигурация Netlify
+├── docs/adr/                     # Architecture Decision Records
+├── CHANGELOG.md
+└── README.md
 ```
 
 ---
 
-## 💾 База данных (Prisma Schema)
+## База данных
 
-### Модели данных
+### Основные модели
 
-#### 1️⃣ User (Пользователь)
+| Модель | Описание |
+|--------|----------|
+| User | Пользователи с Telegram ID, ролью, рейтингом |
+| Trip | Поездки с маршрутом, предпочтениями, статусом |
+| Booking | Бронирования мест |
+| PassengerRequest | Заявки пассажиров с matching |
+| Review | Отзывы и рейтинги |
+
+### Ключевые поля User
 ```prisma
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  avatarUrl String   @default("")
-  phone     String   @default("")
-  bio       String   @default("")
-  position  String   @default("")
-  homeCity  String   @default("Moscow")      // "Moscow" | "Lipetsk"
-  role      String   @default("Passenger")   // "Driver" | "Passenger" | "Both"
-  rating    Float    @default(5.0)
-  
-  // Предпочтения пользователя (по умолчанию)
-  prefMusic        String  @default("Normal")    // "Quiet" | "Normal" | "Loud"
-  prefSmoking      Boolean @default(false)
-  prefPets         Boolean @default(false)
-  prefBaggage      String  @default("Hand")      // "Hand" | "Medium" | "Suitcase"
-  prefConversation String  @default("Chatty")    // "Chatty" | "Quiet"
-  prefAc           Boolean @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Связи
-  tripsAsDriver    Trip[]    @relation("DriverTrips")
-  bookings         Booking[]
-  reviewsGiven     Review[]  @relation("ReviewAuthor")
-  reviewsReceived  Review[]  @relation("ReviewTarget")
-}
-```
-
-**Поля:**
-- `id` - уникальный CUID
-- `email` - email сотрудника (уникальный, используется для входа)
-- `name` - имя пользователя
-- `avatarUrl` - ссылка на аватар (генерируется через dicebear.com)
-- `phone`, `bio`, `position` - дополнительная информация профиля
-- `homeCity` - домашний город ("Moscow" или "Lipetsk")
-- `role` - роль: водитель, пассажир или оба
-- `rating` - рейтинг пользователя (1.0-5.0)
-- `pref*` - набор предпочтений для поездок
-
-#### 2️⃣ Trip (Поездка)
-```prisma
-model Trip {
-  id              String   @id @default(cuid())
-  driverId        String
-  driver          User     @relation("DriverTrips", fields: [driverId], references: [id])
-
-  // Маршрут
-  fromCity        String   // "Moscow" | "Lipetsk"
-  toCity          String
-  date            String   // YYYY-MM-DD
-  time            String   // HH:mm
-  pickupLocation  String   // Адрес посадки
-  dropoffLocation String   // Адрес высадки
-
-  // Координаты (от Яндекс.Карт)
-  pickupLat       Float?   // Широта точки посадки
-  pickupLng       Float?   // Долгота точки посадки
-  dropoffLat      Float?   // Широта точки высадки
-  dropoffLng      Float?   // Долгота точки высадки
-
-  // Места
-  seatsTotal      Int      @default(3)
-  seatsBooked     Int      @default(0)
-  
-  // Предпочтения поездки (копируются из профиля водителя)
-  prefMusic        String  @default("Normal")
-  prefSmoking      Boolean @default(false)
-  prefPets         Boolean @default(false)
-  prefBaggage      String  @default("Hand")
-  prefConversation String  @default("Chatty")
-  prefAc           Boolean @default(true)
-  
-  comment         String   @default("")
-  
-  // Группировка поездок (туда-обратно)
-  tripGroupId     String?
-  isReturn        Boolean  @default(false)
-  
-  status          String   @default("active") // "active" | "completed" | "cancelled"
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  bookings        Booking[]
-  reviews         Review[]
-}
-```
-
-**Бизнес-логика:**
-- Максимум 2 пассажира на поездку (водитель + 2 места)
-- Статусы: `active` (доступна), `completed` (завершена), `cancelled` (отменена)
-- Поддержка связанных поездок (туда-обратно) через `tripGroupId`
-
-#### 3️⃣ Booking (Бронирование)
-```prisma
-model Booking {
-  id          String   @id @default(cuid())
-  tripId      String
-  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  passengerId String
-  passenger   User     @relation(fields: [passengerId], references: [id])
-  status      String   @default("confirmed") // "pending" | "confirmed" | "cancelled"
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([tripId, passengerId]) // Один пассажир - одна бронь
-}
-```
-
-**Ограничения:**
-- Один пассажир может забронировать только одно место в поездке
-- При отмене поездки все бронирования автоматически отменяются (CASCADE)
-- Водитель не может забронировать свою поездку
-
-#### 4️⃣ Review (Отзыв)
-```prisma
-model Review {
-  id        String   @id @default(cuid())
-  tripId    String
-  trip      Trip     @relation(fields: [tripId], references: [id])
-  authorId  String
-  author    User     @relation("ReviewAuthor", fields: [authorId], references: [id])
-  targetId  String
-  target    User     @relation("ReviewTarget", fields: [targetId], references: [id])
-  rating    Int      // 1-5
-  comment   String   @default("")
-  createdAt DateTime @default(now())
-  
-  @@unique([tripId, authorId, targetId])
+  telegramId       BigInt?  @unique
+  telegramUsername String?
+  telegramChatId   BigInt?  // Для уведомлений
+  accountRole      String   @default("user") // user | admin
+  rating           Float    @default(5.0)
 }
 ```
 
 ---
 
-## 🔌 API Документация
+## API Endpoints
 
-**Base URL:** `http://localhost:3001/api` (dev) / `https://your-app.onrender.com/api` (prod)
+### Авторизация
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| POST | `/api/auth/telegram` | Вход через Telegram |
+| GET | `/api/auth/me` | Текущий пользователь |
+| POST | `/api/auth/refresh` | Обновить токен |
 
-### 🔐 Authentication
+### Поездки
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/trips` | Список с фильтрами |
+| POST | `/api/trips` | Создать поездку |
+| PUT | `/api/trips/:id` | Обновить |
+| DELETE | `/api/trips/:id` | Отменить |
 
-#### POST `/auth/login`
-Авторизация по email (с auto-registration)
+### Заявки
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/requests` | Все заявки |
+| GET | `/api/requests/my` | Мои заявки |
+| POST | `/api/requests` | Создать заявку |
+| POST | `/api/requests/:id/link` | Связать с поездкой |
 
-**Request:**
-```json
-{
-  "email": "ivanov@nlmk.com"
-}
-```
-
-**Response:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "user": {
-    "id": "clx123...",
-    "email": "ivanov@nlmk.com",
-    "name": "Ivanov",
-    "avatarUrl": "https://api.dicebear.com/...",
-    "homeCity": "Moscow",
-    "role": "Passenger",
-    "rating": 5.0,
-    "defaultPreferences": { ... }
-  }
-}
-```
-
-#### POST `/auth/register`
-Регистрация нового пользователя
-
-**Request:**
-```json
-{
-  "email": "petrov@nlmk.com",
-  "name": "Петр Петров",
-  "homeCity": "Lipetsk",
-  "role": "Driver"
-}
-```
-
-#### GET `/auth/me`
-Получить текущего пользователя (требует токен)
-
-**Headers:** `Authorization: Bearer <token>`
+### Админ (требует `accountRole: admin`)
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/admin/trips` | Все поездки |
+| PUT | `/api/admin/trips/:id` | Редактировать любую |
+| GET | `/api/admin/users` | Все пользователи |
 
 ---
 
-### 👤 Users
+## Локальная разработка
 
-#### GET `/users/:id`
-Получить профиль пользователя по ID
-
-#### PUT `/users/:id`
-Обновить профиль (требует авторизации)
-
-**Request:**
-```json
-{
-  "name": "Иван Иванов",
-  "phone": "+7 900 123-45-67",
-  "bio": "Люблю классическую музыку",
-  "position": "Инженер",
-  "homeCity": "Moscow",
-  "role": "Both",
-  "defaultPreferences": {
-    "music": "Quiet",
-    "smoking": false,
-    "pets": true,
-    "baggage": "Medium",
-    "conversation": "Chatty",
-    "ac": true
-  }
-}
-```
-
----
-
-### 🚗 Trips
-
-#### GET `/trips`
-Получить список поездок с фильтрами
-
-**Query Parameters:**
-- `from` - город отправления ("Moscow" | "Lipetsk")
-- `to` - город назначения
-- `dateFrom` - дата от (YYYY-MM-DD)
-- `dateTo` - дата до
-- `status` - статус ("active" | "completed" | "cancelled")
-
-**Example:** `GET /trips?from=Moscow&to=Lipetsk&dateFrom=2024-01-10`
-
-**Response:**
-```json
-{
-  "trips": [
-    {
-      "id": "clx123...",
-      "driverId": "clx456...",
-      "driver": { ... },
-      "from": "Moscow",
-      "to": "Lipetsk",
-      "date": "2024-01-15",
-      "time": "08:00",
-      "pickupLocation": "Метро Тульская",
-      "dropoffLocation": "ул. Ленина 15",
-      "seatsTotal": 3,
-      "seatsBooked": 1,
-      "preferences": {
-        "music": "Normal",
-        "smoking": false,
-        "pets": false,
-        "baggage": "Hand",
-        "conversation": "Chatty",
-        "ac": true
-      },
-      "comment": "Еду с остановкой в Туле",
-      "status": "active",
-      "passengers": [ ... ]
-    }
-  ]
-}
-```
-
-#### GET `/trips/:id`
-Получить детали поездки
-
-#### POST `/trips`
-Создать новую поездку (требует авторизации, только для водителей)
-
-**Validation:**
-- ✅ Дата и время поездки должны быть в будущем (иначе ошибка 400)
-
-**Request:**
-```json
-{
-  "from": "Moscow",
-  "to": "Lipetsk",
-  "date": "2024-01-20",
-  "time": "09:00",
-  "pickupLocation": "Павелецкий вокзал",
-  "dropoffLocation": "Площадь Ленина",
-  "seatsTotal": 3,
-  "comment": "Спокойная поездка",
-  "preferences": {
-    "music": "Quiet",
-    "smoking": false,
-    "pets": false,
-    "baggage": "Medium",
-    "conversation": "Quiet",
-    "ac": true
-  }
-}
-```
-
-#### PUT `/trips/:id`
-Обновить поездку (только водитель)
-
-#### DELETE `/trips/:id`
-Отменить поездку (мягкое удаление - меняет status на "cancelled")
-
----
-
-### 📝 Bookings
-
-#### POST `/bookings`
-Забронировать место в поездке
-
-**Request:**
-```json
-{
-  "tripId": "clx123..."
-}
-```
-
-**Validation:**
-- ✅ Поездка должна быть активна
-- ✅ Должны быть свободные места (макс 2 пассажира)
-- ✅ Водитель не может забронировать свою поездку
-- ✅ Нельзя дважды забронировать одну поездку
-
-#### GET `/bookings/my`
-Получить мои бронирования (требует авторизации)
-
-#### GET `/bookings/:id`
-Детали бронирования (доступ только пассажиру или водителю)
-
-#### DELETE `/bookings/:id`
-Отменить бронирование (пассажир или водитель)
-
----
-
-## 🎨 Frontend архитектура
-
-### Основные компоненты
-
-```
-App.tsx - главный компонент с роутингом и состоянием
-├── LoginScreen - экран авторизации
-├── HomeScreen - главная страница с поиском
-├── TripsListScreen - список найденных поездок
-├── TripDetailsScreen - детали поездки
-├── CreateTripScreen - создание поездки
-├── ProfileScreen - профиль пользователя
-└── MyTripsScreen - мои поездки и бронирования
-```
-
-### API Client (services/api.ts)
-
-Centralized API client с автоматическим управлением токенами:
-
-```typescript
-import { api } from './services/api';
-
-// Авторизация
-const user = await api.login('user@nlmk.com');
-
-// Получение поездок
-const trips = await api.getTrips({
-  from: 'Moscow',
-  to: 'Lipetsk',
-  dateFrom: '2024-01-10'
-});
-
-// Создание поездки
-const newTrip = await api.createTrip({
-  from: 'Moscow',
-  to: 'Lipetsk',
-  date: '2024-01-15',
-  time: '09:00',
-  // ... другие поля
-});
-
-// Бронирование
-await api.bookTrip('trip-id');
-```
-
-### State Management
-
-Использует React useState/useEffect (без Redux):
-- Локальное состояние компонентов
-- Подъем состояния в App.tsx для глобальных данных
-- LocalStorage для токена авторизации
-
-### Styling
-
-Tailwind CSS с кастомной конфигурацией:
-```javascript
-// tailwind.config.js
-{
-  theme: {
-    extend: {
-      colors: {
-        primary: '#2563eb',
-        secondary: '#64748b'
-      }
-    }
-  }
-}
-```
-
----
-
-## 🔧 Настройка и запуск
-
-### Локальная разработка
-
-#### 1. Поднять локальную PostgreSQL (Docker)
-
+### 1. PostgreSQL (Docker)
 ```bash
-# из корня проекта
 docker compose up -d postgres
-docker compose ps
 ```
 
-PostgreSQL будет доступна на `localhost:5433`.
-
-#### 2. Backend Setup
-
+### 2. Backend
 ```bash
 cd backend
-
-# Установка зависимостей
 npm install
-
-# Локальные переменные окружения
 cp .env.local.example .env.local
-
-# Создание БД и таблиц
 npm run db:push:local
-
-# Генерация Prisma Client
-npm run db:generate:local
-
-# Запуск dev сервера
 npm run dev:local
-# Server: http://localhost:3001
+# http://localhost:3001
 ```
 
-#### 3. Frontend Setup
-
+### 3. Frontend
 ```bash
 cd frontend
-
-# Установка зависимостей
 npm install
-
-# Настройка .env.local
 echo 'VITE_API_URL=http://localhost:3001/api' > .env.local
-echo 'VITE_YANDEX_MAPS_API_KEY=your-yandex-maps-key' >> .env.local
-
-# Запуск dev сервера
 npm run dev
-# App: http://localhost:5173
+# http://localhost:5173
 ```
 
-**Получение API ключей:**
-- **Яндекс.Карты:** https://developer.tech.yandex.ru/ → Создать проект → JavaScript API
-- **Google Gemini (бесплатно):** https://aistudio.google.com/app/apikey
-  - Ключ задается на backend в `backend/.env.local` как `GEMINI_API_KEY`
+### Environment Variables
 
-### Доступные команды
-
-#### Backend
-```bash
-npm run dev       # Запуск dev сервера с hot-reload
-npm run dev:local # Запуск dev с переменными из .env.local
-npm run build     # Компиляция TypeScript в dist/
-npm start         # Запуск production сервера
-npm run db:push   # Применить схему к БД
-npm run db:push:local # Применить схему к локальной БД из .env.local
-npm run db:studio # Открыть Prisma Studio (GUI для БД)
+**Backend (.env.local):**
+```
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+TELEGRAM_BOT_TOKEN=...
+GEMINI_API_KEY=...
 ```
 
-#### Frontend
-```bash
-npm run dev       # Запуск Vite dev сервера
-npm run build     # Production build в dist/
-npm run preview   # Просмотр production build локально
+**Frontend (.env.local):**
+```
+VITE_API_URL=http://localhost:3001/api
+VITE_YANDEX_MAPS_API_KEY=...
+VITE_TELEGRAM_BOT_USERNAME=SteelBlaBlaCarBot
 ```
 
 ---
 
-## 🚀 Deployment
+## Безопасность
 
-### Render.com (Backend)
+### Реализовано
+- Telegram HMAC-SHA256 валидация
+- JWT access (15 мин) + refresh (7 дней) токены
+- Rate limiting (100 req/15min, auth: 5 req/15min)
+- Zod валидация на обеих сторонах
+- CORS protection
+- SQL injection protection (Prisma)
+- Авторизация admin endpoints
 
-Конфигурация в `render.yaml`:
-
-```yaml
-databases:
-  - name: nlmkblablacar-db
-    databaseName: nlmkblablacar
-    user: nlmkblablacar
-    plan: free
-
-services:
-  - type: web
-    name: nlmkblablacar-api
-    runtime: node
-    plan: free
-    rootDir: backend
-    buildCommand: npm install --include=dev && npm run build && npx prisma db push
-    startCommand: npm start
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: nlmkblablacar-db
-          property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
-      - key: FRONTEND_URL
-        sync: false
-      - key: NODE_ENV
-        value: production
+### Контрактный слой
+Типобезопасность между frontend и backend через shared Zod-схемы:
 ```
-
-**Деплой:**
-1. Push код в Git репозиторий
-2. Подключить репозиторий к Render
-3. Render автоматически создаст PostgreSQL БД и деплоит бэкенд
-
-### Netlify (Frontend)
-
-Конфигурация в `netlify.toml`:
-
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-**Деплой:**
-1. Push код в Git
-2. Подключить репозиторий к Netlify
-3. Настроить environment variables (Site settings → Environment variables):
-   - `VITE_API_URL` = URL вашего backend на Render (https://nlmkblablacar.onrender.com/api)
-   - `VITE_YANDEX_MAPS_API_KEY` = API ключ Яндекс.Карт
-   - `VITE_GEMINI_API_KEY` = API ключ Google Gemini (бесплатный)
-
----
-
-## 🎯 Ключевые функции
-
-### 1. Упрощенная авторизация
-- Вход только по email (без пароля)
-- Auto-registration: если пользователя нет - создается автоматически
-- JWT токен с TTL 7 дней
-- Автоматический logout при невалидном токене
-
-### 2. Умный поиск поездок
-- Фильтрация по маршруту (Москва ⇄ Липецк)
-- Фильтр по датам
-- Отображение доступных мест в реальном времени
-- Показ предпочтений водителя
-
-### 3. Система предпочтений
-Каждый пользователь и поездка имеют набор предпочтений:
-- **Музыка:** Тихо / Нормально / Громко
-- **Курение:** Разрешено / Запрещено
-- **Животные:** Можно / Нельзя
-- **Багаж:** Ручная кладь / Средний / Чемодан
-- **Разговоры:** Общительный / Тихий
-- **Кондиционер:** Есть / Нет
-
-### 4. Группировка поездок (туда-обратно)
-- Создание связанных поездок через `tripGroupId`
-- Отображение обратной поездки вместе с основной
-
-### 5. Система бронирований
-- Real-time проверка доступных мест
-- Автоматический подсчет забронированных мест
-- Возможность отмены бронирования
-- Уведомления о статусе
-
-### 6. Профиль пользователя
-- Аватар (генерация через dicebear.com)
-- Расширенная информация: телефон, био, должность
-- Рейтинг (для будущей системы отзывов)
-- Управление предпочтениями
-
-### 7. Автоархивация поездок
-- Нельзя создать поездку с датой/временем в прошлом
-- Прошедшие поездки автоматически переводятся в статус `completed`
-- Архивация запускается при старте сервера и каждый час
-- Поездки архивируются на следующий день после даты поездки
-
-### 8. Интеграция Яндекс.Карт
-- **Автодополнение адресов** при вводе мест посадки/высадки
-- **Ограничение по городам:** поиск работает только в Москве и Липецке
-- **Выбор точки на карте:** полноэкранный режим с маркером
-- **Обратное геокодирование:** получение адреса по координатам
-- **Геолокация:** определение текущего местоположения пользователя
-
-### 9. ИИ-помощник (Google Gemini)
-- Кнопка с иконкой ✨ в правом нижнем углу
-- Отвечает на вопросы о приложении и поездках
-- Помогает придумать комментарий к поездке
-- Даёт прогноз погоды для региона
-- **Бесплатный тариф:** 60 запросов/мин, 1 млн токенов/день
-
-### 10. Система отзывов
-- После завершения поездки участники могут оставить отзывы друг другу
-- Рейтинг от 1 до 5 звёзд
-- Текстовые комментарии
-- Возможность пропустить отзыв
-- Рейтинг пользователя пересчитывается автоматически
-
----
-
-## 📊 Статистика проекта
-
-```
-Backend:
-├── 6 TypeScript файлов
-├── 4 REST API модуля
-├── 4 модели базы данных
-└── ~400 строк кода
-
-Frontend:
-├── React SPA с routing
-├── 8+ компонентов/экранов
-├── 2 сервиса (API, Gemini)
-└── ~800 строк кода
-
-Total size: ~347 MB (включая node_modules)
-Dependencies: ~200 npm пакетов
+backend/src/contracts/  ←→  frontend/contracts/
 ```
 
 ---
 
-## 🔒 Безопасность
+## Документация
 
-### Реализовано:
-- ✅ JWT токены для авторизации
-- ✅ CORS protection
-- ✅ Валидация данных через Zod
-- ✅ SQL injection protection (Prisma ORM)
-- ✅ Environment variables для секретов
-
-### TODO (для production):
-- ⚠️ Добавить HTTPS
-- ⚠️ Rate limiting
-- ⚠️ Helmet.js для security headers
-- ⚠️ Реальная система паролей (bcryptjs уже установлен)
-- ⚠️ Email verification
-- ⚠️ CSRF protection
+| Документ | Описание |
+|----------|----------|
+| [CHANGELOG.md](CHANGELOG.md) | История версий |
+| [docs/adr/](docs/adr/) | Architecture Decision Records |
+| [ADR-021](docs/adr/ADR-021-telegram-authentication.md) | Telegram авторизация |
 
 ---
 
-## 🐛 Известные ограничения
+## Roadmap
 
-1. **Авторизация:** Упрощенная, без паролей (демо-режим)
-2. **Email уведомления:** Не реализованы
-3. **Push уведомления:** Отсутствуют
-4. **Оплата:** Не предусмотрена
-5. **Chat:** Нет системы сообщений между пользователями
-6. **Маршруты:** Карта показывает только точки, без линии маршрута
+### Выполнено
+- [x] MVP с email авторизацией (v1.0)
+- [x] Backend API + PostgreSQL (v2.0)
+- [x] Система отзывов (v2.2)
+- [x] Яндекс.Карты + Gemini AI (v2.3)
+- [x] TanStack Query + JWT refresh (v2.4)
+- [x] Заявки пассажиров (v2.5)
+- [x] Telegram авторизация и уведомления (v2.6)
+- [x] Рефакторинг App.tsx + ESLint 9.x (v2.6.2)
+- [x] Тёмная тема + статистика + геймификация (v2.7)
+- [x] Админ-панель + контрактный слой (v2.8)
 
----
-
-## 📝 Roadmap
-
-### Phase 1 (MVP) ✅
-- [x] Авторизация
-- [x] CRUD поездок
-- [x] Система бронирований
-- [x] Базовый UI
-
-### Phase 2 ✅
-- [x] Система отзывов
-- [x] Интеграция Яндекс.Карт (автодополнение, выбор точки)
-- [x] ИИ-помощник (Google Gemini)
-- [x] Европейский формат дат (DD.MM.YYYY)
-
-### Phase 3 (В разработке)
-- [ ] Email уведомления
-- [ ] Реальная авторизация с паролями
-- [ ] Admin панель
-
-### Phase 4 (Планируется)
-- [ ] Система чатов
-- [ ] Push уведомления
+### Планируется
+- [ ] Push уведомления (PWA)
 - [ ] Мобильное приложение (React Native)
 - [ ] Линия маршрута на карте
 
 ---
 
-## 🤝 Контакты и поддержка
-
-**Автор:** [Ваше имя]
-**Email:** [Ваш email]
-**GitHub:** [Ссылка на репозиторий]
-**AI Studio:** https://ai.studio/apps/drive/1lisjJdxP6CgrZ2bkZApLsZlv_ch0Q4em
-
----
-
-## 📜 Лицензия
+## Лицензия
 
 Проект разработан для внутреннего использования NLMK.
 
 ---
 
-*Документация обновлена: 2026-01-18*
-*Версия проекта: 1.2.0*
+*Версия документации: 2.8.0*

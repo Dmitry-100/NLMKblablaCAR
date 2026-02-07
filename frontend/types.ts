@@ -49,6 +49,8 @@ export interface User {
   rating: number;
   telegramLinked?: boolean;
   telegramUsername?: string | null;
+  accountRole?: 'user' | 'admin';
+  isBlocked?: boolean;
 }
 
 export interface Trip {

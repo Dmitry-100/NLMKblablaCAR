@@ -3,21 +3,29 @@ import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
 import { validateTelegramAuth, TelegramAuthData, sendMessage } from '../services/telegram.js';
 import { generateAccessToken, generateRefreshToken, authMiddleware } from '../middleware/auth.js';
+import { authUserResponseSchema } from '../contracts/auth.js';
+import {
+  telegramAuthResponseSchema,
+  telegramAuthSchema,
+  telegramLinkResponseSchema,
+  telegramUnlinkResponseSchema,
+  telegramWebhookResponseSchema,
+} from '../contracts/telegram.js';
 
 const router = Router();
 const log = createLogger('telegram-auth');
 
-// ============ VALIDATION SCHEMAS ============
+const ADMIN_TELEGRAM_USERNAMES = new Set(['dmitry_100']);
 
-const telegramAuthSchema = z.object({
-  id: z.number(),
-  first_name: z.string(),
-  last_name: z.string().optional(),
-  username: z.string().optional(),
-  photo_url: z.string().optional(),
-  auth_date: z.number(),
-  hash: z.string(),
-});
+function normalizeTelegramUsername(username?: string | null): string | null {
+  if (!username) return null;
+  return username.replace(/^@/, '').trim().toLowerCase() || null;
+}
+
+function isAdminTelegramUsername(username?: string | null): boolean {
+  const normalized = normalizeTelegramUsername(username);
+  return !!normalized && ADMIN_TELEGRAM_USERNAMES.has(normalized);
+}
 
 // ============ ROUTES ============
 
@@ -54,11 +62,15 @@ router.post('/auth/telegram', async (req: Request, res: Response) => {
           avatarUrl: data.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.id}`,
           homeCity: 'Moscow',
           role: 'Passenger',
+          accountRole: isAdminTelegramUsername(data.username) ? 'admin' : 'user',
         },
       });
 
       log.info({ telegramId: data.id, name: fullName }, 'New user registered via Telegram');
     } else {
+      if (user.isBlocked) {
+        return res.status(403).json({ error: 'Аккаунт заблокирован' });
+      }
       // Update existing user's Telegram data
       user = await req.prisma.user.update({
         where: { id: user.id },
@@ -66,6 +78,7 @@ router.post('/auth/telegram', async (req: Request, res: Response) => {
           telegramUsername: data.username,
           telegramChatId: telegramId,
           telegramPhotoUrl: data.photo_url,
+          ...(isAdminTelegramUsername(data.username) ? { accountRole: 'admin' } : {}),
           // Update avatar if user doesn't have one
           ...(user.avatarUrl === '' && data.photo_url ? { avatarUrl: data.photo_url } : {}),
         },
@@ -78,11 +91,12 @@ router.post('/auth/telegram', async (req: Request, res: Response) => {
     const accessToken = generateAccessToken(user.id, user.email || `tg:${data.id}`);
     const refreshToken = generateRefreshToken(user.id);
 
-    res.json({
+    const response = telegramAuthResponseSchema.parse({
       accessToken,
       refreshToken,
       user: formatUserResponse(user),
     });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -150,11 +164,13 @@ router.post('/telegram/webhook', async (req: Request, res: Response) => {
     }
 
     // Always respond with 200 OK to Telegram
-    res.status(200).json({ ok: true });
+    const response = telegramWebhookResponseSchema.parse({ ok: true });
+    res.status(200).json(response);
   } catch (error) {
     log.error({ err: error }, 'Webhook error');
     // Still respond 200 to prevent Telegram from retrying
-    res.status(200).json({ ok: true });
+    const response = telegramWebhookResponseSchema.parse({ ok: true });
+    res.status(200).json(response);
   }
 });
 
@@ -185,6 +201,15 @@ router.post('/telegram/link', authMiddleware, async (req: Request, res: Response
     }
 
     // Link Telegram to current user
+    const currentUser = await req.prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { isBlocked: true },
+    });
+
+    if (!currentUser || currentUser.isBlocked) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
+
     const user = await req.prisma.user.update({
       where: { id: req.userId },
       data: {
@@ -192,16 +217,18 @@ router.post('/telegram/link', authMiddleware, async (req: Request, res: Response
         telegramUsername: data.username,
         telegramChatId: telegramId,
         telegramPhotoUrl: data.photo_url,
+        ...(isAdminTelegramUsername(data.username) ? { accountRole: 'admin' } : {}),
       },
     });
 
     log.info({ userId: user.id, telegramId: data.id }, 'Telegram account linked');
 
-    res.json({
+    const response = telegramLinkResponseSchema.parse({
       success: true,
       message: 'Telegram аккаунт успешно привязан',
       user: formatUserResponse(user),
     });
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -244,7 +271,11 @@ router.delete('/telegram/unlink', authMiddleware, async (req: Request, res: Resp
 
     log.info({ userId: user.id }, 'Telegram account unlinked');
 
-    res.json({ success: true, message: 'Telegram аккаунт отвязан' });
+    const response = telegramUnlinkResponseSchema.parse({
+      success: true,
+      message: 'Telegram аккаунт отвязан',
+    });
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Telegram unlink error');
     res.status(500).json({ error: 'Ошибка отвязки Telegram' });
@@ -264,7 +295,7 @@ type UserWithTelegram = UserBasic & {
 };
 
 function formatUserResponse(user: UserWithTelegram) {
-  return {
+  return authUserResponseSchema.parse({
     id: user.id,
     email: user.email,
     name: user.name,
@@ -274,6 +305,8 @@ function formatUserResponse(user: UserWithTelegram) {
     position: user.position || '',
     homeCity: user.homeCity,
     role: user.role,
+    accountRole: user.accountRole as 'user' | 'admin',
+    isBlocked: user.isBlocked,
     rating: user.rating,
     telegramLinked: !!user.telegramId,
     telegramUsername: user.telegramUsername,
@@ -285,7 +318,7 @@ function formatUserResponse(user: UserWithTelegram) {
       conversation: user.prefConversation,
       ac: user.prefAc,
     },
-  };
+  });
 }
 
 export default router;

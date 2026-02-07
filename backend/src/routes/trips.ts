@@ -4,50 +4,25 @@ import { Prisma } from '@prisma/client';
 import { authMiddleware, optionalAuth } from '../middleware/auth.js';
 import { createLogger } from '../utils/logger.js';
 import { notifyMatchingTrip, notifyTripCancelled } from '../services/telegram.js';
+import {
+  type BaggagePref,
+  type City,
+  type ConversationPref,
+  createTripSchema,
+  createTripResponseSchema,
+  getTripResponseSchema,
+  getTripsResponseSchema,
+  type MusicPref,
+  type Role,
+  type TripStatus,
+  tripQuerySchema,
+  type TripResponseDto,
+  updateTripResponseSchema,
+  updateTripSchema,
+} from '../contracts/trips.js';
 
 const router = Router();
 const log = createLogger('trips');
-
-// ============ VALIDATION SCHEMAS ============
-
-const createTripSchema = z.object({
-  from: z.enum(['Moscow', 'Lipetsk']),
-  to: z.enum(['Moscow', 'Lipetsk']),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Формат даты: YYYY-MM-DD'),
-  time: z.string().regex(/^\d{2}:\d{2}$/, 'Формат времени: HH:mm'),
-  pickupLocation: z.string().min(1, 'Укажите место посадки'),
-  dropoffLocation: z.string().min(1, 'Укажите место высадки'),
-  // Coordinates from Yandex Maps
-  pickupLat: z.number().optional(),
-  pickupLng: z.number().optional(),
-  dropoffLat: z.number().optional(),
-  dropoffLng: z.number().optional(),
-  seatsTotal: z.number().int().min(1).max(4).default(3),
-  comment: z.string().optional().default(''),
-  tripGroupId: z.string().optional(),
-  isReturn: z.boolean().optional().default(false),
-  preferences: z
-    .object({
-      music: z.enum(['Quiet', 'Normal', 'Loud']).optional(),
-      smoking: z.boolean().optional(),
-      pets: z.boolean().optional(),
-      baggage: z.enum(['Hand', 'Medium', 'Suitcase']).optional(),
-      conversation: z.enum(['Chatty', 'Quiet']).optional(),
-      ac: z.boolean().optional(),
-    })
-    .optional(),
-});
-
-const updateTripSchema = createTripSchema.partial();
-
-const querySchema = z.object({
-  from: z.enum(['Moscow', 'Lipetsk']).optional(),
-  to: z.enum(['Moscow', 'Lipetsk']).optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  status: z.enum(['active', 'completed', 'cancelled', 'archived']).optional(),
-  includeArchived: z.enum(['true', 'false']).optional(),
-});
 
 function ensureLocationCoordsPair(
   lat: number | undefined,
@@ -88,7 +63,11 @@ function ensureTripDateIsNotPast(date: string, time: string) {
  */
 router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const query = querySchema.parse(req.query);
+    const query = tripQuerySchema.parse(req.query);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate()
+    ).padStart(2, '0')}`;
 
     // Строим фильтры
     const where: Prisma.TripWhereInput = {};
@@ -108,9 +87,24 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
     if (query.from) where.fromCity = query.from;
     if (query.to) where.toCity = query.to;
 
-    if (query.dateFrom || query.dateTo) {
+    let showOnlyFuture = false;
+    if (!query.status && query.includeArchived !== 'true') {
+      showOnlyFuture = true;
+    }
+    if (query.status === 'active') {
+      showOnlyFuture = true;
+    }
+    const minDate = showOnlyFuture ? today : undefined;
+    const effectiveDateFrom =
+      query.dateFrom && minDate
+        ? query.dateFrom > minDate
+          ? query.dateFrom
+          : minDate
+        : query.dateFrom || minDate;
+
+    if (effectiveDateFrom || query.dateTo) {
       where.date = {};
-      if (query.dateFrom) where.date.gte = query.dateFrom;
+      if (effectiveDateFrom) where.date.gte = effectiveDateFrom;
       if (query.dateTo) where.date.lte = query.dateTo;
     }
 
@@ -126,7 +120,11 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       orderBy: [{ date: 'asc' }, { time: 'asc' }],
     });
 
-    res.json({ trips: trips.map(trip => formatTripResponse(trip, req.userId)) });
+    const response = getTripsResponseSchema.parse({
+      trips: trips.map(trip => formatTripResponse(trip, req.userId)),
+    });
+
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -157,7 +155,11 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Поездка не найдена' });
     }
 
-    res.json({ trip: formatTripResponse(trip, req.userId) });
+    const response = getTripResponseSchema.parse({
+      trip: formatTripResponse(trip, req.userId),
+    });
+
+    res.json(response);
   } catch (error) {
     log.error({ err: error }, 'Get trip error');
     res.status(500).json({ error: 'Ошибка получения поездки' });
@@ -227,7 +229,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       log.error({ err }, 'Failed to notify matching passengers')
     );
 
-    res.status(201).json({ trip: formatTripResponse(trip, req.userId) });
+    const response = createTripResponseSchema.parse({
+      trip: formatTripResponse(trip, req.userId),
+    });
+
+    res.status(201).json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -313,7 +319,11 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
       include: { driver: true },
     });
 
-    res.json({ trip: formatTripResponse(updatedTrip, req.userId) });
+    const response = updateTripResponseSchema.parse({
+      trip: formatTripResponse(updatedTrip, req.userId),
+    });
+
+    res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -437,21 +447,21 @@ function formatUserResponse(user: UserWithPrefs) {
     phone: user.phone || '',
     bio: user.bio || '',
     position: user.position || '',
-    homeCity: user.homeCity,
-    role: user.role,
+    homeCity: user.homeCity as City,
+    role: user.role as Role,
     rating: user.rating,
     defaultPreferences: {
-      music: user.prefMusic,
+      music: user.prefMusic as MusicPref,
       smoking: user.prefSmoking,
       pets: user.prefPets,
-      baggage: user.prefBaggage,
-      conversation: user.prefConversation,
+      baggage: user.prefBaggage as BaggagePref,
+      conversation: user.prefConversation as ConversationPref,
       ac: user.prefAc,
     },
   };
 }
 
-function formatTripResponse(trip: TripWithBookings, currentUserId?: string) {
+function formatTripResponse(trip: TripWithBookings, currentUserId?: string): TripResponseDto {
   const myBooking = currentUserId
     ? trip.bookings?.find(booking => booking.passengerId === currentUserId)
     : undefined;
@@ -460,8 +470,8 @@ function formatTripResponse(trip: TripWithBookings, currentUserId?: string) {
     id: trip.id,
     driverId: trip.driverId,
     driver: trip.driver ? formatUserResponse(trip.driver) : null,
-    from: trip.fromCity,
-    to: trip.toCity,
+    from: trip.fromCity as City,
+    to: trip.toCity as City,
     date: trip.date,
     time: trip.time,
     pickupLocation: trip.pickupLocation,
@@ -474,17 +484,17 @@ function formatTripResponse(trip: TripWithBookings, currentUserId?: string) {
     seatsTotal: trip.seatsTotal,
     seatsBooked: trip.seatsBooked,
     preferences: {
-      music: trip.prefMusic,
+      music: trip.prefMusic as MusicPref,
       smoking: trip.prefSmoking,
       pets: trip.prefPets,
-      baggage: trip.prefBaggage,
-      conversation: trip.prefConversation,
+      baggage: trip.prefBaggage as BaggagePref,
+      conversation: trip.prefConversation as ConversationPref,
       ac: trip.prefAc,
     },
     comment: trip.comment,
     tripGroupId: trip.tripGroupId,
     isReturn: trip.isReturn,
-    status: trip.status,
+    status: trip.status as TripStatus,
     passengers: trip.bookings?.map(b => formatUserResponse(b.passenger)) || [],
     myBookingId: myBooking?.id,
   };

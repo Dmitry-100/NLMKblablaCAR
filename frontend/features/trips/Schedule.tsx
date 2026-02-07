@@ -33,8 +33,12 @@ export function Schedule({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredTrips = useMemo(() => {
+    const nowTs = Date.now();
     return trips
       .filter(t => {
+        const tripTs = new Date(`${t.date}T${t.time}`).getTime();
+        if (Number.isNaN(tripTs) || tripTs < nowTs) return false;
+
         if (filterDir === 'my-trips') {
           const isDriver = t.driverId === user.id;
           const isPassenger = t.passengers?.some(p => p.id === user.id);
