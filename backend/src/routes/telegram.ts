@@ -111,6 +111,8 @@ router.post('/telegram/webhook', async (req: Request, res: Response) => {
   try {
     const update = req.body;
 
+    log.info({ update_id: update.update_id, message_text: update.message?.text }, 'Webhook received');
+
     // Handle /start command - this gives us the chat_id
     if (update.message?.text?.startsWith('/start')) {
       const chatId = BigInt(update.message.chat.id);

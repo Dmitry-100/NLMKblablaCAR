@@ -76,7 +76,8 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api', authLimiter, telegramRoutes); // Telegram auth routes
+app.use('/api/auth/telegram', authLimiter); // Rate limit only Telegram auth, not webhook
+app.use('/api', telegramRoutes); // Telegram routes (webhook without rate limit)
 app.use('/api/users', usersRoutes);
 app.use('/api/trips', tripsRoutes);
 app.use('/api/bookings', bookingsRoutes);
