@@ -59,10 +59,7 @@ export function validateTelegramAuth(data: TelegramAuthData): boolean {
   const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
 
   // Calculate HMAC-SHA256
-  const calculatedHash = crypto
-    .createHmac('sha256', secretKey)
-    .update(checkString)
-    .digest('hex');
+  const calculatedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
 
   const isValid = calculatedHash === hash;
 
@@ -99,7 +96,10 @@ export async function sendMessage(options: SendMessageOptions): Promise<boolean>
     const result = (await response.json()) as { ok: boolean; description?: string };
 
     if (!result.ok) {
-      log.error({ error: result.description, chatId: options.chatId }, 'Failed to send Telegram message');
+      log.error(
+        { error: result.description, chatId: options.chatId },
+        'Failed to send Telegram message'
+      );
       return false;
     }
 
@@ -131,7 +131,8 @@ export async function notifyNewBooking(
 
   await sendMessage({
     chatId: driverChatId,
-    text: `🚗 <b>Новое бронирование!</b>\n\n` +
+    text:
+      `🚗 <b>Новое бронирование!</b>\n\n` +
       `Пассажир: ${passengerName}\n` +
       `Маршрут: из ${fromCity} в ${toCity}\n` +
       `Дата: ${tripDate} в ${tripTime}\n\n` +
@@ -158,7 +159,8 @@ export async function notifyBookingConfirmed(
 
   await sendMessage({
     chatId: passengerChatId,
-    text: `✅ <b>Бронирование подтверждено!</b>\n\n` +
+    text:
+      `✅ <b>Бронирование подтверждено!</b>\n\n` +
       `Водитель: ${driverName}\n` +
       `Маршрут: из ${fromCity} в ${toCity}\n` +
       `Дата: ${tripDate} в ${tripTime}\n` +
@@ -185,7 +187,8 @@ export async function notifyBookingCancelled(
 
   await sendMessage({
     chatId,
-    text: `❌ <b>Бронирование отменено</b>\n\n` +
+    text:
+      `❌ <b>Бронирование отменено</b>\n\n` +
       `Отменено ${byWhom}\n` +
       `Маршрут: из ${fromCity} в ${toCity}\n` +
       `Дата: ${tripDate}\n\n` +
@@ -210,7 +213,8 @@ export async function notifyTripCancelled(
 
   await sendMessage({
     chatId: passengerChatId,
-    text: `🚫 <b>Поездка отменена</b>\n\n` +
+    text:
+      `🚫 <b>Поездка отменена</b>\n\n` +
       `Водитель ${driverName} отменил поездку\n` +
       `Маршрут: из ${fromCity} в ${toCity}\n` +
       `Дата: ${tripDate}\n\n` +
@@ -236,7 +240,8 @@ export async function notifyMatchingTrip(
 
   await sendMessage({
     chatId: passengerChatId,
-    text: `🎉 <b>Найдена подходящая поездка!</b>\n\n` +
+    text:
+      `🎉 <b>Найдена подходящая поездка!</b>\n\n` +
       `Водитель: ${driverName}\n` +
       `Маршрут: из ${fromCity} в ${toCity}\n` +
       `Дата: ${tripDate} в ${tripTime}\n\n` +

@@ -5,7 +5,12 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
-import { UserBasic, TripWithDriver, BookingWithRelations, BookingWithTrip } from '../types/index.js';
+import {
+  UserBasic,
+  TripWithDriver,
+  BookingWithRelations,
+  BookingWithTrip,
+} from '../types/index.js';
 import { notifyNewBooking, notifyBookingCancelled } from '../services/telegram.js';
 
 // Union type for formatBookingResponse
@@ -258,7 +263,8 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     // Send notification about cancellation
     if (bookingForNotification) {
-      const cancelledBy = bookingForNotification.passengerId === req.userId ? 'passenger' : 'driver';
+      const cancelledBy =
+        bookingForNotification.passengerId === req.userId ? 'passenger' : 'driver';
       const notifyUserId =
         cancelledBy === 'passenger'
           ? bookingForNotification.trip.driver.telegramChatId

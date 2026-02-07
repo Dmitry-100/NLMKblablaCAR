@@ -1,16 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
-import {
-  validateTelegramAuth,
-  TelegramAuthData,
-  sendMessage,
-} from '../services/telegram.js';
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  authMiddleware,
-} from '../middleware/auth.js';
+import { validateTelegramAuth, TelegramAuthData, sendMessage } from '../services/telegram.js';
+import { generateAccessToken, generateRefreshToken, authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 const log = createLogger('telegram-auth');
@@ -43,9 +35,7 @@ router.post('/auth/telegram', async (req: Request, res: Response) => {
     }
 
     const telegramId = BigInt(data.id);
-    const fullName = data.last_name
-      ? `${data.first_name} ${data.last_name}`
-      : data.first_name;
+    const fullName = data.last_name ? `${data.first_name} ${data.last_name}` : data.first_name;
 
     // Find or create user
     let user = await req.prisma.user.findUnique({
@@ -111,13 +101,15 @@ router.post('/telegram/webhook', async (req: Request, res: Response) => {
   try {
     const update = req.body;
 
-    log.info({ update_id: update.update_id, message_text: update.message?.text }, 'Webhook received');
+    log.info(
+      { update_id: update.update_id, message_text: update.message?.text },
+      'Webhook received'
+    );
 
     // Handle /start command - this gives us the chat_id
     if (update.message?.text?.startsWith('/start')) {
       const chatId = BigInt(update.message.chat.id);
       const telegramId = BigInt(update.message.from.id);
-      const username = update.message.from.username;
 
       // Update user's chatId if they exist
       const user = await req.prisma.user.findUnique({
@@ -132,7 +124,8 @@ router.post('/telegram/webhook', async (req: Request, res: Response) => {
 
         await sendMessage({
           chatId,
-          text: `👋 Привет, ${user.name}!\n\n` +
+          text:
+            `👋 Привет, ${user.name}!\n\n` +
             `Я буду присылать вам уведомления о:\n` +
             `• Новых бронированиях\n` +
             `• Отменах поездок\n` +
@@ -140,12 +133,16 @@ router.post('/telegram/webhook', async (req: Request, res: Response) => {
             `Хорошей дороги! 🚗`,
         });
 
-        log.info({ telegramId: Number(telegramId), chatId: Number(chatId) }, 'User chat_id updated');
+        log.info(
+          { telegramId: Number(telegramId), chatId: Number(chatId) },
+          'User chat_id updated'
+        );
       } else {
         // User not registered yet
         await sendMessage({
           chatId,
-          text: `👋 Привет!\n\n` +
+          text:
+            `👋 Привет!\n\n` +
             `Чтобы получать уведомления, сначала войдите в приложение через Telegram.\n\n` +
             `После этого вернитесь сюда и напишите /start`,
         });

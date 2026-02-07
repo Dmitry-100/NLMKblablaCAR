@@ -458,6 +458,13 @@ router.post('/:id/link', authMiddleware, async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'Поездка недоступна' });
     }
 
+    // Проверяем что текущий пользователь - водитель этой поездки
+    if (trip.driverId !== req.userId) {
+      return res
+        .status(403)
+        .json({ error: 'Только водитель может связать заявку со своей поездкой' });
+    }
+
     // Проверяем совпадение маршрута
     if (trip.fromCity !== request.fromCity || trip.toCity !== request.toCity) {
       return res.status(400).json({ error: 'Маршрут поездки не совпадает с заявкой' });

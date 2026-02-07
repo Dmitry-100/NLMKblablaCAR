@@ -32,7 +32,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     req.userId = decoded.userId;
 
     next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({ error: 'Недействительный токен' });
   }
 };
@@ -77,7 +77,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     }
 
     next();
-  } catch (error) {
+  } catch {
     // Игнорируем ошибки токена, просто не устанавливаем userId
     next();
   }

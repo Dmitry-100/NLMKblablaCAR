@@ -387,10 +387,7 @@ import { User, Trip, Booking, PrismaClient } from '@prisma/client';
 /**
  * Notify passengers who have matching requests for this new trip
  */
-async function notifyMatchingPassengers(
-  prisma: PrismaClient,
-  trip: Trip & { driver?: User }
-) {
+async function notifyMatchingPassengers(prisma: PrismaClient, trip: Trip & { driver?: User }) {
   // Find matching pending requests
   const matchingRequests = await prisma.passengerRequest.findMany({
     where: {
@@ -421,10 +418,7 @@ async function notifyMatchingPassengers(
   }
 
   if (matchingRequests.length > 0) {
-    log.info(
-      { tripId: trip.id, count: matchingRequests.length },
-      'Notified matching passengers'
-    );
+    log.info({ tripId: trip.id, count: matchingRequests.length }, 'Notified matching passengers');
   }
 }
 

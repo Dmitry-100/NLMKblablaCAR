@@ -2,7 +2,6 @@ import { createLogger } from '../utils/logger.js';
 const log = createLogger('auth');
 
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import {
   generateAccessToken,

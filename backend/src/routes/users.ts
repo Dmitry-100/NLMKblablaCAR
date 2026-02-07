@@ -5,7 +5,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
-import { UserBasic, TripWithRelations, TripWithDriver, BookingWithTrip } from '../types/index.js';
+import { UserBasic, TripWithDriver, BookingWithTrip } from '../types/index.js';
 
 const router = Router();
 

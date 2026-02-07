@@ -49,9 +49,7 @@ export const Auth: React.FC<AuthProps> = ({ onTelegramLogin, loading }) => {
           )}
         </Card>
 
-        <p className="mt-6 text-xs text-gray-400">
-          Для сотрудников НЛМК
-        </p>
+        <p className="mt-6 text-xs text-gray-400">Для сотрудников НЛМК</p>
       </div>
     </div>
   );

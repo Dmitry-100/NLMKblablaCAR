@@ -1,6 +1,7 @@
 {
   "name": "nlmk-blablacar-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend API для корпоративного карпулинга NLMK",
   "main": "dist/index.js",
   "scripts": {
@@ -15,8 +16,8 @@
     "db:push:local": "./scripts/with-local-env.sh prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "lint": "eslint src --ext .ts --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint src --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
@@ -36,6 +37,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
