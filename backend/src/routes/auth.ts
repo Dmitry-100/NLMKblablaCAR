@@ -31,8 +31,9 @@ const registerSchema = z.object({
 
 /**
  * POST /api/auth/login
+ * @deprecated Use Telegram auth instead (POST /api/auth/telegram)
  * Авторизация по email (упрощённая - без пароля для демо)
- * В реальном приложении здесь будет отправка кода на почту
+ * Сохранено для обратной совместимости с существующими пользователями
  */
 router.post('/login', async (req: Request, res: Response) => {
   try {

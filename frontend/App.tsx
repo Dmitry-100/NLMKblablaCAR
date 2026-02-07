@@ -2569,18 +2569,6 @@ export default function App() {
     return fallback;
   };
 
-  const handleLogin = async (email: string) => {
-    setLoading(true);
-    try {
-      const u = await api.login(email);
-      setUser(u);
-    } catch (error) {
-      alert(`Ошибка входа: ${getErrorMessage(error, 'не удалось войти')}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleTelegramLogin = async (telegramData: {
     id: number;
     first_name: string;
@@ -2734,7 +2722,7 @@ export default function App() {
   };
 
   if (!user) {
-    return <Auth onLogin={handleLogin} onTelegramLogin={handleTelegramLogin} loading={loading} />;
+    return <Auth onTelegramLogin={handleTelegramLogin} loading={loading} />;
   }
 
   return (

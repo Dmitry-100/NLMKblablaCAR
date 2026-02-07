@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { Car, Mail } from 'lucide-react';
-import { Button } from '../ui/Button';
+import React from 'react';
+import { Car } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { APP_NAME } from '../../constants';
 import { TelegramLoginButton, TelegramAuthData } from './TelegramLoginButton';
@@ -9,22 +8,11 @@ import { TelegramLoginButton, TelegramAuthData } from './TelegramLoginButton';
 const TELEGRAM_BOT_NAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'SteelBlaBlaCarBot';
 
 interface AuthProps {
-  onLogin: (email: string) => void;
   onTelegramLogin: (data: TelegramAuthData) => void;
   loading: boolean;
 }
 
-export const Auth: React.FC<AuthProps> = ({ onLogin, onTelegramLogin, loading }) => {
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [email, setEmail] = useState('');
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.includes('@')) {
-      onLogin(email);
-    }
-  };
-
+export const Auth: React.FC<AuthProps> = ({ onTelegramLogin, loading }) => {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-6 relative overflow-hidden">
       {/* Background Decorations */}
@@ -44,30 +32,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onTelegramLogin, loading })
               <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-gray-500">Авторизация...</p>
             </div>
-          ) : showEmailForm ? (
-            <form onSubmit={handleEmailSubmit} className="text-left">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Корпоративная почта
-              </label>
-              <input
-                type="email"
-                required
-                placeholder="name@nlmk.com"
-                className="w-full p-3 bg-gray-50 rounded-xl mb-4 focus:ring-2 focus:ring-sky-200 outline-none"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-              <Button className="w-full mb-3" type="submit">
-                Войти
-              </Button>
-              <button
-                type="button"
-                onClick={() => setShowEmailForm(false)}
-                className="w-full text-sm text-gray-500 hover:text-gray-700"
-              >
-                ← Назад
-              </button>
-            </form>
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 mb-4">
@@ -81,25 +45,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onTelegramLogin, loading })
                 buttonSize="large"
                 cornerRadius={12}
               />
-
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-gray-400">или</span>
-                </div>
-              </div>
-
-              {/* Email login option */}
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => setShowEmailForm(true)}
-              >
-                <Mail size={18} />
-                Войти по email
-              </Button>
             </div>
           )}
         </Card>
