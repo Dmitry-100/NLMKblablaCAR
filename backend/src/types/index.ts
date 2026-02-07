@@ -26,6 +26,13 @@ export type TripWithRelations = Prisma.TripGetPayload<{
   };
 }>;
 
+// Trip with driver only (for bookings context)
+export type TripWithDriver = Prisma.TripGetPayload<{
+  include: {
+    driver: true;
+  };
+}>;
+
 // Booking with relations
 export type BookingWithRelations = Prisma.BookingGetPayload<{
   include: {
@@ -38,11 +45,37 @@ export type BookingWithRelations = Prisma.BookingGetPayload<{
   };
 }>;
 
-// Review with relations
+// Booking with trip and driver only (no passenger)
+export type BookingWithTrip = Prisma.BookingGetPayload<{
+  include: {
+    trip: {
+      include: {
+        driver: true;
+      };
+    };
+  };
+}>;
+
+// Review with relations (all optional for flexible formatting)
 export type ReviewWithRelations = Prisma.ReviewGetPayload<{
   include: {
     author: true;
     target: true;
+    trip: true;
+  };
+}>;
+
+// Review with partial relations
+export type ReviewWithAuthorTarget = Prisma.ReviewGetPayload<{
+  include: {
+    author: true;
+    target: true;
+  };
+}>;
+
+export type ReviewWithAuthorTrip = Prisma.ReviewGetPayload<{
+  include: {
+    author: true;
     trip: true;
   };
 }>;
@@ -56,6 +89,13 @@ export type RequestWithRelations = Prisma.PassengerRequestGetPayload<{
         driver: true;
       };
     };
+  };
+}>;
+
+// PassengerRequest with requester only
+export type RequestWithRequester = Prisma.PassengerRequestGetPayload<{
+  include: {
+    requester: true;
   };
 }>;
 

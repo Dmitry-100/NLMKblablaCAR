@@ -10,6 +10,7 @@ import {
   verifyRefreshToken,
   authMiddleware,
 } from '../middleware/auth.js';
+import { UserBasic } from '../types/index.js';
 
 const router = Router();
 
@@ -187,7 +188,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
 // ============ HELPERS ============
 
-function formatUserResponse(user: any) {
+function formatUserResponse(user: UserBasic) {
   return {
     id: user.id,
     email: user.email,

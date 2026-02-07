@@ -3,7 +3,23 @@ const log = createLogger('reviews');
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { PrismaClient, Review } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
+import {
+  UserBasic,
+  ReviewWithRelations,
+  ReviewWithAuthorTarget,
+  ReviewWithAuthorTrip,
+  UserResponse,
+} from '../types/index.js';
+
+// Trip type for validation function
+interface TripForValidation {
+  driverId: string;
+}
+
+// Union type for formatReviewResponse
+type ReviewForFormatting = ReviewWithRelations | ReviewWithAuthorTarget | ReviewWithAuthorTrip;
 
 const router = Router();
 
@@ -23,7 +39,7 @@ const skipReviewSchema = z.object({
 
 // ============ HELPERS ============
 
-function formatUserResponse(user: any) {
+function formatUserResponse(user: UserBasic): UserResponse {
   return {
     id: user.id,
     email: user.email,
@@ -35,17 +51,27 @@ function formatUserResponse(user: any) {
     homeCity: user.homeCity,
     role: user.role,
     rating: user.rating,
+    defaultPreferences: {
+      music: user.prefMusic,
+      smoking: user.prefSmoking,
+      pets: user.prefPets,
+      baggage: user.prefBaggage,
+      conversation: user.prefConversation,
+      ac: user.prefAc,
+    },
   };
 }
 
-function formatReviewResponse(review: any) {
+function formatReviewResponse(review: ReviewForFormatting) {
+  const author = 'author' in review ? review.author : null;
+  const target = 'target' in review ? review.target : null;
   return {
     id: review.id,
     tripId: review.tripId,
     authorId: review.authorId,
-    author: review.author ? formatUserResponse(review.author) : null,
+    author: author ? formatUserResponse(author) : null,
     targetId: review.targetId,
-    target: review.target ? formatUserResponse(review.target) : null,
+    target: target ? formatUserResponse(target) : null,
     rating: review.rating,
     comment: review.comment,
     skipped: review.skipped,
@@ -56,7 +82,7 @@ function formatReviewResponse(review: any) {
 /**
  * Проверяет, все ли отзывы собраны, и архивирует поездку если да
  */
-async function checkAndArchiveTrip(prisma: any, tripId: string) {
+async function checkAndArchiveTrip(prisma: PrismaClient, tripId: string) {
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
     include: {
@@ -85,7 +111,7 @@ async function checkAndArchiveTrip(prisma: any, tripId: string) {
 /**
  * Пересчитывает рейтинг пользователя на основе полученных отзывов
  */
-async function recalculateUserRating(prisma: any, userId: string) {
+async function recalculateUserRating(prisma: PrismaClient, userId: string) {
   const reviews = await prisma.review.findMany({
     where: {
       targetId: userId,
@@ -98,7 +124,7 @@ async function recalculateUserRating(prisma: any, userId: string) {
     return;
   }
 
-  const avgRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+  const avgRating = reviews.reduce((sum: number, r: Review) => sum + r.rating, 0) / reviews.length;
 
   await prisma.user.update({
     where: { id: userId },
@@ -109,7 +135,12 @@ async function recalculateUserRating(prisma: any, userId: string) {
 /**
  * Проверяет, что пользователь участвовал в поездке
  */
-async function validateParticipation(prisma: any, tripId: string, userId: string, trip: any) {
+async function validateParticipation(
+  prisma: PrismaClient,
+  tripId: string,
+  userId: string,
+  trip: TripForValidation
+) {
   if (trip.driverId === userId) {
     return true; // Водитель
   }
@@ -339,8 +370,8 @@ router.get('/pending', authMiddleware, async (req: Request, res: Response) => {
     const pendingReviews = [];
 
     for (const trip of completedTrips) {
-      const reviewedTargetIds = trip.reviews.map((r: any) => r.targetId);
-      const pendingFor: any[] = [];
+      const reviewedTargetIds = trip.reviews.map((r: Review) => r.targetId);
+      const pendingFor: UserResponse[] = [];
 
       // Определяем участников поездки, которым нужно оставить отзыв
       if (trip.driverId === req.userId) {

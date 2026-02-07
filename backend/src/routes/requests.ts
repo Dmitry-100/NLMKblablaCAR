@@ -1,7 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { authMiddleware, optionalAuth } from '../middleware/auth.js';
 import { createLogger } from '../utils/logger.js';
+import { UserBasic, RequestWithRelations, RequestWithRequester } from '../types/index.js';
+
+// Union type for formatRequestResponse
+type RequestForFormatting = RequestWithRelations | RequestWithRequester;
 
 const router = Router();
 const log = createLogger('requests');
@@ -94,7 +99,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
     const query = querySchema.parse(req.query);
 
-    const where: any = {};
+    const where: Prisma.PassengerRequestWhereInput = {};
 
     // По умолчанию показываем только pending
     where.status = query.status || 'pending';
@@ -356,7 +361,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Дата начала не может быть в прошлом' });
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.PassengerRequestUpdateInput = {};
 
     if (data.dateFrom) updateData.dateFrom = data.dateFrom;
     if (data.dateTo) updateData.dateTo = data.dateTo;
@@ -489,7 +494,7 @@ router.post('/:id/link', authMiddleware, async (req: Request, res: Response) => 
 
 // ============ HELPERS ============
 
-function formatUserResponse(user: any) {
+function formatUserResponse(user: UserBasic) {
   return {
     id: user.id,
     email: user.email,
@@ -512,7 +517,8 @@ function formatUserResponse(user: any) {
   };
 }
 
-function formatRequestResponse(request: any) {
+function formatRequestResponse(request: RequestForFormatting) {
+  const linkedTrip = 'linkedTrip' in request && request.linkedTrip;
   return {
     id: request.id,
     requesterId: request.requesterId,
@@ -534,12 +540,12 @@ function formatRequestResponse(request: any) {
     comment: request.comment,
     status: request.status,
     linkedTripId: request.linkedTripId,
-    linkedTrip: request.linkedTrip
+    linkedTrip: linkedTrip
       ? {
-          id: request.linkedTrip.id,
-          date: request.linkedTrip.date,
-          time: request.linkedTrip.time,
-          driver: request.linkedTrip.driver ? formatUserResponse(request.linkedTrip.driver) : null,
+          id: linkedTrip.id,
+          date: linkedTrip.date,
+          time: linkedTrip.time,
+          driver: linkedTrip.driver ? formatUserResponse(linkedTrip.driver) : null,
         }
       : null,
     createdAt: request.createdAt,

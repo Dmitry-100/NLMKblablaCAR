@@ -3,7 +3,9 @@ const log = createLogger('users');
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
+import { UserBasic, TripWithRelations, TripWithDriver, BookingWithTrip } from '../types/index.js';
 
 const router = Router();
 
@@ -66,7 +68,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     const data = updateUserSchema.parse(req.body);
 
     // Формируем объект обновления
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
 
     if (data.name) updateData.name = data.name;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
@@ -156,7 +158,7 @@ router.get('/:id/bookings', authMiddleware, async (req: Request, res: Response) 
 
 // ============ HELPERS ============
 
-function formatUserResponse(user: any) {
+function formatUserResponse(user: UserBasic) {
   return {
     id: user.id,
     email: user.email,
@@ -179,7 +181,7 @@ function formatUserResponse(user: any) {
   };
 }
 
-function formatTripResponse(trip: any) {
+function formatTripResponse(trip: TripWithDriver) {
   return {
     id: trip.id,
     driverId: trip.driverId,
@@ -206,7 +208,7 @@ function formatTripResponse(trip: any) {
   };
 }
 
-function formatBookingResponse(booking: any) {
+function formatBookingResponse(booking: BookingWithTrip) {
   return {
     id: booking.id,
     tripId: booking.tripId,
