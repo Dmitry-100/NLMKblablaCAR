@@ -57,7 +57,7 @@ export const Auth: React.FC<AuthProps> = ({ onTelegramLogin, onDevLogin, loading
                 cornerRadius={12}
               />
 
-              {showDevLogin && (
+              {import.meta.env.DEV && showDevLogin && (
                 <div className="mt-5 border-t border-[color:var(--app-border)] pt-5">
                   <p className="mb-3 text-xs uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
                     Локальная разработка

@@ -108,23 +108,20 @@ export function useAppController() {
     }
   };
 
-  const handleDevLogin = async () => {
-    if (!import.meta.env.DEV) {
-      alert('Локальный вход доступен только в dev-режиме');
-      return;
-    }
-
-    const devEmail = import.meta.env.VITE_DEV_LOGIN_EMAIL || 'local-smoke@nlmk.com';
-    setLoading(true);
-    try {
-      const loggedInUser = await api.login(devEmail);
-      setUser(loggedInUser);
-    } catch (error) {
-      alert(`Ошибка локального входа: ${getErrorMessage(error, 'не удалось войти')}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleDevLogin = import.meta.env.DEV
+    ? async () => {
+        const devEmail = import.meta.env.VITE_DEV_LOGIN_EMAIL || 'local-smoke@nlmk.com';
+        setLoading(true);
+        try {
+          const loggedInUser = await api.login(devEmail);
+          setUser(loggedInUser);
+        } catch (error) {
+          alert(`Ошибка локального входа: ${getErrorMessage(error, 'не удалось войти')}`);
+        } finally {
+          setLoading(false);
+        }
+      }
+    : undefined;
 
   const handleLogout = () => {
     api.logout();

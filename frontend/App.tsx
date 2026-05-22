@@ -17,7 +17,7 @@ export default function App() {
     return (
       <Auth
         onTelegramLogin={controller.handleTelegramLogin}
-        onDevLogin={controller.handleDevLogin}
+        onDevLogin={import.meta.env.DEV ? controller.handleDevLogin : undefined}
         loading={controller.loading}
       />
     );
