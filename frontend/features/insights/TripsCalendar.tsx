@@ -90,12 +90,13 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
   return (
     <div className="pb-24 space-y-5 animate-fade-in">
       <header className="flex items-center gap-3">
-        <div className="rounded-2xl bg-indigo-100 p-3 text-indigo-600">
+        <div className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3 text-[color:var(--steel-blue)]">
           <CalendarDays size={26} />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Календарь поездок</h1>
-          <p className="text-sm text-slate-500">Месячный обзор ваших поездок</p>
+          <p className="industrial-kicker mb-1">Месячный план</p>
+          <h1 className="industrial-page-title">Календарь поездок</h1>
+          <p className="industrial-muted mt-1 text-sm">Месячный обзор ваших поездок</p>
         </div>
       </header>
 
@@ -108,8 +109,8 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
               onClick={() => setPeriod(option.value)}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 period === option.value
-                  ? 'bg-sky-500 text-white'
-                  : 'app-surface-soft app-text-muted border border-transparent hover:border-slate-200'
+                  ? 'industrial-chip-active'
+                  : 'industrial-chip hover:border-[color:var(--app-border-strong)]'
               }`}
             >
               {option.label}
@@ -122,12 +123,12 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
             onClick={() =>
               setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
             }
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-md p-2 text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)]"
             aria-label="Предыдущий месяц"
           >
             <ChevronLeft size={18} />
           </button>
-          <h2 className="text-lg font-medium text-slate-800">
+          <h2 className="text-lg font-medium text-[color:var(--app-text)]">
             {currentMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
           </h2>
           <button
@@ -135,14 +136,14 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
             onClick={() =>
               setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
             }
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-md p-2 text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)]"
             aria-label="Следующий месяц"
           >
             <ChevronRight size={18} />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-2 text-center text-xs text-slate-500">
+        <div className="grid grid-cols-7 gap-2 text-center text-xs text-[color:var(--app-text-muted)]">
           {weekDays.map(day => (
             <div key={day} className="py-2 font-medium">
               {day}
@@ -160,19 +161,21 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
                 key={key}
                 type="button"
                 onClick={() => setSelectedDate(key)}
-                className={`relative min-h-16 rounded-xl border p-1 transition ${
+                className={`relative min-h-16 rounded-md border p-1 transition ${
                   isSelected
-                    ? 'border-sky-400 bg-sky-50'
+                    ? 'border-[color:var(--steel-blue)] bg-[color:var(--app-chip)]'
                     : cell.inMonth
-                      ? 'border-slate-100 bg-white hover:border-slate-200'
-                      : 'border-transparent bg-slate-50 text-slate-300'
+                      ? 'border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] hover:border-[color:var(--app-border-strong)]'
+                      : 'border-transparent bg-[color:var(--app-surface-soft)] text-[color:var(--app-text-muted)] opacity-50'
                 }`}
               >
-                <div className={`text-sm ${isToday ? 'font-bold text-sky-600' : 'text-slate-700'}`}>
+                <div
+                  className={`text-sm ${isToday ? 'font-bold text-[color:var(--steel-blue)]' : 'text-[color:var(--app-text)]'}`}
+                >
                   {cell.date.getDate()}
                 </div>
                 {tripsCount > 0 && (
-                  <div className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                  <div className="mt-1 inline-flex rounded-sm bg-[color:var(--success)] px-2 py-0.5 text-[10px] font-medium text-white">
                     {tripsCount}
                   </div>
                 )}
@@ -183,7 +186,7 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
       </Card>
 
       <Card>
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text)]">
           Поездки на {new Date(selectedDate).toLocaleDateString('ru-RU')}
         </h3>
         {selectedTrips.length === 0 ? (
@@ -197,14 +200,19 @@ export function TripsCalendar({ trips, user }: TripsCalendarProps) {
             {selectedTrips.map(trip => {
               const iAmDriver = trip.driverId === user.id;
               return (
-                <div key={trip.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div
+                  key={trip.id}
+                  className="rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3"
+                >
                   <div className="mb-1 flex items-center justify-between">
-                    <div className="text-sm font-medium text-slate-700">
+                    <div className="text-sm font-medium text-[color:var(--app-text)]">
                       {getCityName(trip.from)} → {getCityName(trip.to)}
                     </div>
-                    <span className="text-xs text-slate-500">{formatTime(trip.time)}</span>
+                    <span className="text-xs text-[color:var(--app-text-muted)]">
+                      {formatTime(trip.time)}
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-[color:var(--app-text-muted)]">
                     {iAmDriver ? 'Вы водитель' : 'Вы пассажир'} • {trip.pickupLocation}
                   </div>
                 </div>

@@ -248,24 +248,24 @@ export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[color:var(--app-surface-strong)]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
+      <div className="flex items-center justify-between border-b border-[color:var(--app-border)] p-4">
         <button
           onClick={onClose}
-          className="p-2 -ml-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+          className="-ml-2 rounded-md p-2 text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)] hover:text-[color:var(--app-text)]"
         >
           <X size={24} />
         </button>
-        <h2 className="font-semibold text-gray-800">Выберите точку на карте</h2>
+        <h2 className="font-semibold text-[color:var(--app-text)]">Выберите точку на карте</h2>
         <div className="w-10" /> {/* Spacer */}
       </div>
 
       {/* Map */}
       <div className="flex-1 relative">
         {!isLoaded ? (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex h-full w-full items-center justify-center bg-[color:var(--app-surface-soft)]">
+            <div className="flex items-center gap-2 text-[color:var(--app-text-muted)]">
               <Loader2 size={24} className="animate-spin" />
               <span>Загрузка карты...</span>
             </div>
@@ -278,33 +278,33 @@ export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: 
         <button
           onClick={handleLocateMe}
           disabled={isLocating || !isLoaded}
-          className="absolute right-4 bottom-32 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          className="absolute right-4 bottom-32 rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-3 shadow-lg transition-colors hover:bg-[color:var(--app-surface-soft)] disabled:opacity-50"
           title="Моё местоположение"
         >
           {isLocating ? (
-            <Loader2 size={20} className="animate-spin text-sky-500" />
+            <Loader2 size={20} className="animate-spin text-[color:var(--steel-blue)]" />
           ) : (
-            <Navigation2 size={20} className="text-sky-500" />
+            <Navigation2 size={20} className="text-[color:var(--steel-blue)]" />
           )}
         </button>
       </div>
 
       {/* Footer с выбранным адресом */}
-      <div className="p-4 bg-white border-t border-gray-100 space-y-3">
+      <div className="space-y-3 border-t border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-4">
         {/* Выбранный адрес */}
-        <div className="bg-gray-50 rounded-xl p-3 min-h-[60px]">
+        <div className="min-h-[60px] rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3">
           {isLoadingAddress ? (
-            <div className="flex items-center gap-2 text-gray-400">
+            <div className="flex items-center gap-2 text-[color:var(--app-text-muted)]">
               <Loader2 size={16} className="animate-spin" />
               <span>Определение адреса...</span>
             </div>
           ) : selectedAddress ? (
             <div className="flex items-start gap-2">
-              <MapPin size={18} className="text-sky-500 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-gray-700">{selectedAddress}</span>
+              <MapPin size={18} className="mt-0.5 flex-shrink-0 text-[color:var(--steel-blue)]" />
+              <span className="text-sm text-[color:var(--app-text)]">{selectedAddress}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-gray-400">
+            <div className="flex items-center gap-2 text-[color:var(--app-text-muted)]">
               <MapPin size={18} />
               <span className="text-sm">Нажмите на карту, чтобы выбрать точку</span>
             </div>
@@ -315,14 +315,14 @@ export function MapPicker({ isOpen, onClose, onSelect, city, initialLocation }: 
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            className="flex-1 rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-4 py-3 font-medium text-[color:var(--app-text)] transition-colors hover:border-[color:var(--app-border-strong)]"
           >
             Отмена
           </button>
           <button
             onClick={handleConfirm}
             disabled={!selectedCoords || isLoadingAddress}
-            className="flex-1 py-3 px-4 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-200 hover:shadow-sky-300 transition-all"
+            className="flex flex-1 items-center justify-center gap-2 rounded-md bg-[color:var(--steel-blue)] px-4 py-3 font-medium text-white transition-colors hover:bg-[color:var(--steel-blue-dark)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Check size={18} />
             Подтвердить

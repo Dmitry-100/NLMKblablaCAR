@@ -80,9 +80,9 @@ const SwipeActionWrapper: React.FC<SwipeActionWrapperProps> = ({ enabled, onActi
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl">
+    <div className="relative overflow-hidden rounded-xl">
       {enabled && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-end bg-gradient-to-r from-transparent via-emerald-100 to-emerald-200 px-4 text-emerald-700">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-end bg-[color:var(--app-surface-soft)] px-4 text-[color:var(--success)]">
           <div className="flex items-center gap-2 text-sm font-medium">
             <ArrowRightCircle size={18} />
             Свайп для брони
@@ -137,7 +137,7 @@ export function TripList({
 
   if (loading) {
     return (
-      <div className="grid gap-6 animate-fade-in">
+      <div className="grid gap-4 animate-fade-in">
         {Array.from({ length: 3 }).map((_, index) => (
           <TripCardSkeleton key={`trip-skeleton-${index}`} />
         ))}
@@ -146,7 +146,7 @@ export function TripList({
   }
 
   return (
-    <div className="grid gap-6 animate-fade-in">
+    <div className="grid gap-4 animate-fade-in">
       {trips.length === 0 ? (
         <EmptyState
           title="Пока нет поездок"
@@ -176,14 +176,10 @@ export function TripList({
               enabled={canSwipeToBook}
               onAction={() => handleJoin(trip.id)}
             >
-              <Card className="relative group overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                  <Car size={100} />
-                </div>
-
-                <div className="flex justify-between items-start mb-4">
+              <Card className="route-card relative group overflow-hidden">
+                <div className="grid gap-4 lg:grid-cols-[1fr_180px]">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
                       <Badge color={trip.from === City.Moscow ? 'blue' : 'pink'}>
                         {getCityName(trip.from)} → {getCityName(trip.to)}
                       </Badge>
@@ -191,149 +187,167 @@ export function TripList({
                       {isMyTrip && <Badge color="green">Ваша поездка</Badge>}
                       {new Date(`${trip.date}T${trip.time}`).getTime() - Date.now() < 7200000 &&
                         new Date(`${trip.date}T${trip.time}`).getTime() > Date.now() && (
-                          <span className="text-xs text-orange-500 font-bold animate-pulse flex items-center gap-1">
+                          <span className="flex items-center gap-1 text-xs font-semibold text-[color:var(--warning)] animate-pulse">
                             <Clock size={12} /> Скоро отправление
                           </span>
                         )}
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800">
-                      {formatTime(trip.time)}{' '}
-                      <span className="text-sm font-normal text-gray-500">
-                        {' '}
-                        {formatDate(trip.date)}
-                      </span>
-                    </h3>
-                  </div>
-                  <div className="text-right flex items-center gap-2 relative z-10">
-                    <div className="text-2xl font-light text-sky-600">
-                      {availableSeats} <span className="text-xs text-gray-400">мест</span>
-                    </div>
-                    {isMyTrip && (
-                      <>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            onEdit(trip);
-                          }}
-                          className="p-2 text-sky-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors z-20"
-                          title="Редактировать"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDelete(trip.id);
-                          }}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-20"
-                          disabled={deletingId === trip.id}
-                          title="Удалить"
-                        >
-                          {deletingId === trip.id ? (
-                            <Loader2 size={18} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={18} />
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <Link
-                  to={`/user/${trip.driver.id}`}
-                  className="flex items-center gap-4 mb-4 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors"
-                >
-                  <Avatar
-                    src={trip.driver.avatarUrl}
-                    alt={trip.driver.name}
-                    size={40}
-                    className="border-2 border-white shadow-sm"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 hover:text-sky-600">
-                      {trip.driver.name}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      ★ {trip.driver.rating.toFixed(1)} Водитель
-                    </p>
-                  </div>
-                </Link>
-
-                {passengers.length > 0 && (
-                  <div className="mb-4 p-3 bg-green-50/50 rounded-lg border border-green-100">
-                    <div className="flex items-center gap-2 text-sm text-green-700 mb-2">
-                      <Users size={14} />
-                      <span className="font-medium">Пассажиры ({passengers.length})</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {passengers.map(p => (
-                        <Link
-                          key={p.id}
-                          to={`/user/${p.id}`}
-                          className="flex items-center gap-2 bg-white px-2 py-1 rounded-full shadow-sm hover:bg-sky-50 transition-colors"
-                        >
-                          <Avatar src={p.avatarUrl} alt={p.name} size={24} />
-                          <span className="text-xs text-gray-700 hover:text-sky-600">{p.name}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-gradient-to-r from-sky-50 to-pink-50 rounded-xl p-4 mb-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-sky-400 border-2 border-white shadow"></div>
-                        <div className="w-0.5 h-6 bg-gradient-to-b from-sky-300 to-pink-300"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-400 mb-0.5">Откуда</p>
-                        <p className="text-sm text-gray-700 leading-tight">{trip.pickupLocation}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-pink-400 border-2 border-white shadow"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-400 mb-0.5">Куда</p>
-                        <p className="text-sm text-gray-700 leading-tight">
-                          {trip.dropoffLocation}
+                    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        <p className="industrial-kicker mb-1">Отправление</p>
+                        <h3 className="text-3xl font-light leading-tight text-[color:var(--app-text)]">
+                          {formatTime(trip.time)}
+                        </h3>
+                        <p className="text-sm text-[color:var(--app-text-muted)]">
+                          {formatDate(trip.date)}
                         </p>
                       </div>
+                      <Link
+                        to={`/user/${trip.driver.id}`}
+                        className="flex items-center gap-3 rounded-lg border border-transparent p-2 transition-colors hover:border-[color:var(--app-border)] hover:bg-[color:var(--app-surface-soft)]"
+                      >
+                        <Avatar src={trip.driver.avatarUrl} alt={trip.driver.name} size={38} />
+                        <div>
+                          <p className="text-sm font-medium text-[color:var(--app-text)] hover:text-[color:var(--steel-blue)]">
+                            {trip.driver.name}
+                          </p>
+                          <p className="text-xs text-[color:var(--app-text-muted)]">
+                            ★ {trip.driver.rating.toFixed(1)} водитель
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
+
+                    <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="h-3 w-3 rounded-full border-2 border-[color:var(--app-surface-strong)] bg-[color:var(--steel-blue)]"></div>
+                            <div className="route-line h-7 w-0.5"></div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="mb-0.5 text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                              Откуда
+                            </p>
+                            <p className="text-sm leading-tight text-[color:var(--app-text)]">
+                              {trip.pickupLocation}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="h-3 w-3 rounded-full border-2 border-[color:var(--app-surface-strong)] bg-[color:var(--app-text)]"></div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="mb-0.5 text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                              Куда
+                            </p>
+                            <p className="text-sm leading-tight text-[color:var(--app-text)]">
+                              {trip.dropoffLocation}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {passengers.length > 0 && (
+                      <div className="mt-4 rounded-lg border border-[color:var(--app-border)] p-3">
+                        <div className="mb-2 flex items-center gap-2 text-sm text-[color:var(--success)]">
+                          <Users size={14} />
+                          <span className="font-medium">Пассажиры ({passengers.length})</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {passengers.map(p => (
+                            <Link
+                              key={p.id}
+                              to={`/user/${p.id}`}
+                              className="flex items-center gap-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] px-2 py-1 transition-colors hover:border-[color:var(--steel-blue)]"
+                            >
+                              <Avatar src={p.avatarUrl} alt={p.name} size={24} />
+                              <span className="text-xs text-[color:var(--app-text)]">{p.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {trip.comment && (
+                      <div className="mt-4 border-l-2 border-[color:var(--app-border-strong)] pl-3 text-sm italic text-[color:var(--app-text-muted)]">
+                        "{trip.comment}"
+                      </div>
+                    )}
+
+                    <div className="mt-4 border-t border-[color:var(--app-border)] pt-4">
+                      <PreferenceRow prefs={trip.preferences} />
                     </div>
                   </div>
-                </div>
 
-                {trip.comment && (
-                  <div className="mb-4 text-sm text-gray-500 italic">"{trip.comment}"</div>
-                )}
+                  <aside className="flex flex-col justify-between rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                        Свободно
+                      </p>
+                      <div className="mt-1 text-4xl font-light text-[color:var(--app-text)]">
+                        {availableSeats}
+                      </div>
+                      <p className="text-xs text-[color:var(--app-text-muted)]">
+                        из {maxPassengers} пассажирских мест
+                      </p>
+                    </div>
 
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
-                  <PreferenceRow prefs={trip.preferences} />
-                  {!isMyTrip && myBookingId && (
-                    <Button
-                      onClick={() => handleCancelBooking(myBookingId)}
-                      variant="danger"
-                      className="px-4 py-2 text-sm"
-                      loading={cancelingId === myBookingId}
-                    >
-                      Отменить
-                    </Button>
-                  )}
-                  {!isMyTrip && !myBookingId && (
-                    <Button
-                      onClick={() => handleJoin(trip.id)}
-                      disabled={isFull || isBooked}
-                      variant={isFull ? 'ghost' : 'primary'}
-                      className="px-4 py-2 text-sm"
-                      loading={joiningId === trip.id}
-                    >
-                      {isBooked ? 'Вы записаны' : isFull ? 'Занято' : 'Поехать'}
-                    </Button>
-                  )}
+                    <div className="mt-5 space-y-2">
+                      {isMyTrip && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              onEdit(trip);
+                            }}
+                            className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-2 text-[color:var(--steel-blue)] transition-colors hover:border-[color:var(--steel-blue)]"
+                            title="Редактировать"
+                          >
+                            <Edit2 size={18} className="mx-auto" />
+                          </button>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDelete(trip.id);
+                            }}
+                            className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-2 text-[color:var(--danger)] transition-colors hover:border-[color:var(--danger)]"
+                            disabled={deletingId === trip.id}
+                            title="Удалить"
+                          >
+                            {deletingId === trip.id ? (
+                              <Loader2 size={18} className="mx-auto animate-spin" />
+                            ) : (
+                              <Trash2 size={18} className="mx-auto" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      {!isMyTrip && myBookingId && (
+                        <Button
+                          onClick={() => handleCancelBooking(myBookingId)}
+                          variant="danger"
+                          className="w-full px-4 py-2 text-sm"
+                          loading={cancelingId === myBookingId}
+                        >
+                          Отменить
+                        </Button>
+                      )}
+                      {!isMyTrip && !myBookingId && (
+                        <Button
+                          onClick={() => handleJoin(trip.id)}
+                          disabled={isFull || isBooked}
+                          variant={isFull ? 'ghost' : 'primary'}
+                          className="w-full px-4 py-2 text-sm"
+                          loading={joiningId === trip.id}
+                        >
+                          {isBooked ? 'Вы записаны' : isFull ? 'Занято' : 'Поехать'}
+                        </Button>
+                      )}
+                    </div>
+                  </aside>
                 </div>
               </Card>
             </SwipeActionWrapper>

@@ -119,29 +119,35 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto pb-24 animate-fade-in">
-      <h2 className="text-3xl font-light text-slate-800 mb-6 flex items-center gap-2">
-        <Car className="text-sky-400" /> Создать поездку
-      </h2>
+    <div className="mx-auto max-w-3xl pb-24 animate-fade-in">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3">
+          <Car className="text-[color:var(--steel-blue)]" size={28} />
+        </div>
+        <div>
+          <p className="industrial-kicker mb-1">Новый рейс</p>
+          <h2 className="industrial-page-title">Создать поездку</h2>
+        </div>
+      </div>
 
       <Card className="mb-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-2 bg-sky-400 h-full"></div>
-        <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center justify-between">
+        <div className="absolute top-0 left-0 h-full w-1 bg-[color:var(--steel-blue)]"></div>
+        <h3 className="mb-4 flex items-center justify-between text-lg font-semibold text-[color:var(--app-text)]">
           <span>Часть 1: Туда</span>
           <button
             onClick={() => toggleCities(true)}
-            className="text-sm text-sky-500 hover:underline flex items-center gap-1"
+            className="flex items-center gap-1 text-sm text-[color:var(--steel-blue)] hover:underline"
           >
             Поменять направление <ArrowRight size={14} />
           </button>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-            <MapPin size={20} className="text-sky-500" />
+          <div className="flex items-center gap-3 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3">
+            <MapPin size={20} className="text-[color:var(--steel-blue)]" />
             <div className="flex-1">
-              <p className="text-xs text-gray-400">Маршрут</p>
-              <p className="font-medium text-gray-800">
+              <p className="text-xs text-[color:var(--app-text-muted)]">Маршрут</p>
+              <p className="font-medium text-[color:var(--app-text)]">
                 {getCityName(outbound.from!)} → {getCityName(outbound.to!)}
               </p>
             </div>
@@ -149,18 +155,18 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-xs text-gray-400 block mb-1">Дата</label>
+              <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">Дата</label>
               <input
                 type="date"
-                className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+                className="industrial-input p-2 text-sm"
                 onChange={e => setOutbound({ ...outbound, date: e.target.value })}
               />
             </div>
             <div className="w-1/3">
-              <label className="text-xs text-gray-400 block mb-1">Время</label>
+              <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">Время</label>
               <input
                 type="time"
-                className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+                className="industrial-input p-2 text-sm"
                 onChange={e => setOutbound({ ...outbound, time: e.target.value })}
               />
             </div>
@@ -168,17 +174,19 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
         </div>
 
         <div className="mb-4">
-          <label className="text-xs text-gray-400 block mb-1">Свободных мест</label>
+          <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">
+            Свободных мест
+          </label>
           <select
             value={outboundPassengerSeats}
-            className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+            className="industrial-input p-2 text-sm"
             onChange={e => setOutbound({ ...outbound, seatsTotal: Number(e.target.value) + 1 })}
           >
             <option value={1}>1 место</option>
             <option value={2}>2 места</option>
             <option value={3}>3 места</option>
           </select>
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-[color:var(--app-text-muted)]">
             Укажите число пассажирских мест (без водителя).
           </p>
         </div>
@@ -242,50 +250,56 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
 
         <textarea
           placeholder="Комментарий (напр., 'Выезжаю рано, тихая поездка')"
-          className="w-full bg-gray-50 p-3 rounded-lg text-sm h-20 mb-4"
+          className="industrial-input mb-4 h-20 p-3 text-sm"
           onChange={e => setOutbound({ ...outbound, comment: e.target.value })}
         ></textarea>
 
-        <div className="text-xs text-gray-400 mb-2">Предпочтения (из профиля)</div>
+        <div className="mb-2 text-xs text-[color:var(--app-text-muted)]">
+          Предпочтения (из профиля)
+        </div>
         <PreferenceRow prefs={outbound.preferences!} />
       </Card>
 
       {hasReturn ? (
-        <Card className="mb-6 relative overflow-hidden opacity-90 border-l-4 border-l-pink-300">
+        <Card className="mb-6 relative overflow-hidden border-l-4 border-l-[color:var(--app-border-strong)]">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Часть 2: Обратно</h3>
+            <h3 className="text-lg font-semibold text-[color:var(--app-text)]">Часть 2: Обратно</h3>
             <button
               onClick={() => setHasReturn(false)}
-              className="text-xs text-red-400 hover:text-red-500"
+              className="text-xs text-[color:var(--danger)] hover:underline"
             >
               Удалить обратный путь
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-              <MapPin size={20} className="text-pink-400" />
+            <div className="flex items-center gap-3 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3">
+              <MapPin size={20} className="text-[color:var(--app-text-muted)]" />
               <div className="flex-1">
-                <p className="text-xs text-gray-400">Маршрут</p>
-                <p className="font-medium text-gray-800">
+                <p className="text-xs text-[color:var(--app-text-muted)]">Маршрут</p>
+                <p className="font-medium text-[color:var(--app-text)]">
                   {getCityName(returnTrip.from!)} → {getCityName(returnTrip.to!)}
                 </p>
               </div>
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="text-xs text-gray-400 block mb-1">Дата</label>
+                <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">
+                  Дата
+                </label>
                 <input
                   type="date"
-                  className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+                  className="industrial-input p-2 text-sm"
                   onChange={e => setReturnTrip({ ...returnTrip, date: e.target.value })}
                 />
               </div>
               <div className="w-1/3">
-                <label className="text-xs text-gray-400 block mb-1">Время</label>
+                <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">
+                  Время
+                </label>
                 <input
                   type="time"
-                  className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+                  className="industrial-input p-2 text-sm"
                   onChange={e => setReturnTrip({ ...returnTrip, time: e.target.value })}
                 />
               </div>
@@ -293,10 +307,12 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
           </div>
 
           <div className="mb-4">
-            <label className="text-xs text-gray-400 block mb-1">Свободных мест</label>
+            <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">
+              Свободных мест
+            </label>
             <select
               value={returnPassengerSeats}
-              className="w-full bg-gray-50 p-2 rounded-lg text-sm"
+              className="industrial-input p-2 text-sm"
               onChange={e =>
                 setReturnTrip({ ...returnTrip, seatsTotal: Number(e.target.value) + 1 })
               }
@@ -305,7 +321,7 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
               <option value={2}>2 места</option>
               <option value={3}>3 места</option>
             </select>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-[color:var(--app-text-muted)]">
               Укажите число пассажирских мест (без водителя).
             </p>
           </div>
@@ -369,11 +385,13 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
 
           <textarea
             placeholder="Комментарий (опционально)"
-            className="w-full bg-gray-50 p-3 rounded-lg text-sm h-20 mb-4"
+            className="industrial-input mb-4 h-20 p-3 text-sm"
             onChange={e => setReturnTrip({ ...returnTrip, comment: e.target.value })}
           ></textarea>
 
-          <div className="text-xs text-gray-400 mb-2">Предпочтения (из профиля)</div>
+          <div className="mb-2 text-xs text-[color:var(--app-text-muted)]">
+            Предпочтения (из профиля)
+          </div>
           <PreferenceRow prefs={returnTrip.preferences!} />
         </Card>
       ) : (
@@ -384,12 +402,8 @@ export function CreateTrip({ user, addTrip }: CreateTripProps) {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 w-full p-4 md:pb-4 pb-20 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-center z-[60]">
-        <Button
-          onClick={handleSubmit}
-          className="w-full max-w-md shadow-xl shadow-sky-200/50"
-          loading={isSubmitting}
-        >
+      <div className="app-surface fixed bottom-0 left-0 z-[60] flex w-full justify-center border-t p-4 pb-20 md:pb-4">
+        <Button onClick={handleSubmit} className="w-full max-w-md" loading={isSubmitting}>
           Опубликовать
         </Button>
       </div>

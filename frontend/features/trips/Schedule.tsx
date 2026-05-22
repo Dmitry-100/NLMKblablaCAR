@@ -95,7 +95,7 @@ export function Schedule({
 
   return (
     <div
-      className="pb-20"
+      className="pb-24"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -105,8 +105,11 @@ export function Schedule({
           className="sticky top-0 z-10 -mt-4 mb-3 flex justify-center"
           style={{ height: `${Math.max(20, pullDistance)}px` }}
         >
-          <div className="flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-500 shadow-sm">
-            <Loader2 size={14} className={isRefreshing ? 'animate-spin text-sky-500' : ''} />
+          <div className="app-surface flex items-center gap-2 rounded-md border px-3 py-1 text-xs text-[color:var(--app-text-muted)] shadow-sm">
+            <Loader2
+              size={14}
+              className={isRefreshing ? 'animate-spin text-[color:var(--steel-blue)]' : ''}
+            />
             {isRefreshing
               ? 'Обновляем...'
               : pullDistance >= triggerPull
@@ -115,36 +118,65 @@ export function Schedule({
           </div>
         </div>
       )}
-      <header className="mb-6 flex justify-between items-center">
+      <header className="mb-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <h1 className="text-2xl font-light text-slate-800">Расписание</h1>
-          <p className="text-sm text-gray-400">Корпоративный карпулинг</p>
+          <p className="industrial-kicker mb-2">Операционный список</p>
+          <h1 className="industrial-page-title">Будущие поездки</h1>
+          <p className="industrial-muted mt-2 text-sm">
+            Корпоративный карпулинг Москва ↔ Липецк, только актуальные рейсы.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+          <div className="metric-tile px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-[color:var(--app-text-muted)]">
+              В списке
+            </p>
+            <p className="text-xl font-semibold text-[color:var(--app-text)]">
+              {filteredTrips.length}
+            </p>
+          </div>
+          <div className="metric-tile px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-[color:var(--app-text-muted)]">
+              Москва
+            </p>
+            <p className="text-xl font-semibold text-[color:var(--app-text)]">
+              {filteredTrips.filter(t => t.from === City.Moscow).length}
+            </p>
+          </div>
+          <div className="metric-tile hidden px-3 py-2 sm:block">
+            <p className="text-[11px] uppercase tracking-wide text-[color:var(--app-text-muted)]">
+              Липецк
+            </p>
+            <p className="text-xl font-semibold text-[color:var(--app-text)]">
+              {filteredTrips.filter(t => t.from === City.Lipetsk).length}
+            </p>
+          </div>
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 mb-6">
+      <div className="app-surface mb-6 flex flex-col gap-3 rounded-xl border p-3">
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <button
             onClick={() => setFilterDir('all')}
-            className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'all' ? 'bg-slate-800 text-white' : 'bg-white text-gray-600'}`}
+            className={`industrial-chip px-4 py-2 text-sm whitespace-nowrap transition-colors ${filterDir === 'all' ? 'industrial-chip-active' : 'hover:border-[color:var(--app-border-strong)]'}`}
           >
             Все поездки
           </button>
           <button
             onClick={() => setFilterDir('my-trips')}
-            className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'my-trips' ? 'bg-green-500 text-white' : 'bg-white text-gray-600'}`}
+            className={`industrial-chip px-4 py-2 text-sm whitespace-nowrap transition-colors ${filterDir === 'my-trips' ? 'industrial-chip-active' : 'hover:border-[color:var(--app-border-strong)]'}`}
           >
             Мои поездки
           </button>
           <button
             onClick={() => setFilterDir('moscow-lipetsk')}
-            className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'moscow-lipetsk' ? 'bg-sky-500 text-white' : 'bg-white text-gray-600'}`}
+            className={`industrial-chip px-4 py-2 text-sm whitespace-nowrap transition-colors ${filterDir === 'moscow-lipetsk' ? 'industrial-chip-active' : 'hover:border-[color:var(--app-border-strong)]'}`}
           >
             Москва → Липецк
           </button>
           <button
             onClick={() => setFilterDir('lipetsk-moscow')}
-            className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${filterDir === 'lipetsk-moscow' ? 'bg-pink-500 text-white' : 'bg-white text-gray-600'}`}
+            className={`industrial-chip px-4 py-2 text-sm whitespace-nowrap transition-colors ${filterDir === 'lipetsk-moscow' ? 'industrial-chip-active' : 'hover:border-[color:var(--app-border-strong)]'}`}
           >
             Липецк → Москва
           </button>
@@ -159,7 +191,7 @@ export function Schedule({
               type="date"
               value={filterDateStart}
               onChange={e => setFilterDateStart(e.target.value)}
-              className="pl-8 pr-4 py-2 bg-white rounded-xl text-sm text-gray-600 shadow-sm border border-transparent focus:border-sky-300 outline-none w-full"
+              className="industrial-input py-2 pl-8 pr-4 text-sm"
               placeholder="Начало"
             />
           </div>
@@ -171,7 +203,7 @@ export function Schedule({
               type="date"
               value={filterDateEnd}
               onChange={e => setFilterDateEnd(e.target.value)}
-              className="pl-8 pr-4 py-2 bg-white rounded-xl text-sm text-gray-600 shadow-sm border border-transparent focus:border-sky-300 outline-none w-full"
+              className="industrial-input py-2 pl-8 pr-4 text-sm"
               placeholder="Конец"
             />
           </div>
@@ -181,7 +213,7 @@ export function Schedule({
                 setFilterDateStart('');
                 setFilterDateEnd('');
               }}
-              className="px-3 py-2 text-gray-500 bg-white rounded-xl shadow-sm hover:bg-gray-100"
+              className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] px-3 py-2 text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)]"
             >
               <X size={16} />
             </button>

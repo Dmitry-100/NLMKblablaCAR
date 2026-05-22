@@ -94,12 +94,13 @@ export function StatsDashboard({ trips, user }: StatsDashboardProps) {
   return (
     <div className="pb-24 space-y-5 animate-fade-in">
       <header className="flex items-center gap-3">
-        <div className="rounded-2xl bg-cyan-100 p-3 text-cyan-700">
+        <div className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3 text-[color:var(--steel-blue)]">
           <BarChart3 size={26} />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Дашборд статистики</h1>
-          <p className="text-sm text-slate-500">Поездки, маршруты, активность водителей</p>
+          <p className="industrial-kicker mb-1">Аналитика</p>
+          <h1 className="industrial-page-title">Дашборд статистики</h1>
+          <p className="industrial-muted mt-1 text-sm">Поездки, маршруты, активность водителей</p>
         </div>
       </header>
 
@@ -112,8 +113,8 @@ export function StatsDashboard({ trips, user }: StatsDashboardProps) {
               onClick={() => setPeriod(option.value)}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 period === option.value
-                  ? 'bg-sky-500 text-white'
-                  : 'app-surface-soft app-text-muted border border-transparent hover:border-slate-200'
+                  ? 'industrial-chip-active'
+                  : 'industrial-chip hover:border-[color:var(--app-border-strong)]'
               }`}
             >
               {option.label}
@@ -139,26 +140,43 @@ export function StatsDashboard({ trips, user }: StatsDashboardProps) {
         <>
           <div className="grid gap-3 md:grid-cols-4">
             <Card className="space-y-1">
-              <p className="text-xs uppercase text-slate-400">Мои поездки</p>
-              <p className="text-2xl font-semibold text-slate-800">{personal.total}</p>
+              <p className="text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                Мои поездки
+              </p>
+              <p className="text-2xl font-semibold text-[color:var(--app-text)]">
+                {personal.total}
+              </p>
             </Card>
             <Card className="space-y-1">
-              <p className="text-xs uppercase text-slate-400">Как водитель</p>
-              <p className="text-2xl font-semibold text-slate-800">{personal.driven}</p>
+              <p className="text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                Как водитель
+              </p>
+              <p className="text-2xl font-semibold text-[color:var(--app-text)]">
+                {personal.driven}
+              </p>
             </Card>
             <Card className="space-y-1">
-              <p className="text-xs uppercase text-slate-400">Как пассажир</p>
-              <p className="text-2xl font-semibold text-slate-800">{personal.passenger}</p>
+              <p className="text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                Как пассажир
+              </p>
+              <p className="text-2xl font-semibold text-[color:var(--app-text)]">
+                {personal.passenger}
+              </p>
             </Card>
             <Card className="space-y-1">
-              <p className="text-xs uppercase text-slate-400">CO2 сэкономлено</p>
-              <p className="text-2xl font-semibold text-emerald-600">~{personal.co2Saved} кг</p>
+              <p className="text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                CO2 сэкономлено
+              </p>
+              <p className="text-2xl font-semibold text-[color:var(--success)]">
+                ~{personal.co2Saved} кг
+              </p>
             </Card>
           </div>
 
           <Card>
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <TrendingUp size={16} className="text-sky-500" /> Поездки по дням недели
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[color:var(--app-text)]">
+              <TrendingUp size={16} className="text-[color:var(--steel-blue)]" /> Поездки по дням
+              недели
             </h2>
             <WeekdaySvgChart data={stats.byWeekday} />
           </Card>
@@ -166,17 +184,19 @@ export function StatsDashboard({ trips, user }: StatsDashboardProps) {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-slate-700">Популярные маршруты</h2>
-                <div className="inline-flex rounded-full border border-slate-200 p-1">
+                <h2 className="text-sm font-semibold text-[color:var(--app-text)]">
+                  Популярные маршруты
+                </h2>
+                <div className="inline-flex rounded-md border border-[color:var(--app-border)] p-1">
                   {[5, 8, 12].map(limit => (
                     <button
                       key={`top-routes-${limit}`}
                       type="button"
                       onClick={() => setTopRoutesLimit(limit as 5 | 8 | 12)}
-                      className={`rounded-full px-2 py-0.5 text-xs transition ${
+                      className={`rounded-sm px-2 py-0.5 text-xs transition ${
                         topRoutesLimit === limit
-                          ? 'bg-indigo-500 text-white'
-                          : 'text-slate-500 hover:bg-slate-100'
+                          ? 'bg-[color:var(--app-text)] text-[color:var(--app-surface-strong)]'
+                          : 'text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)]'
                       }`}
                     >
                       top {limit}
@@ -188,16 +208,16 @@ export function StatsDashboard({ trips, user }: StatsDashboardProps) {
             </Card>
 
             <Card>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[color:var(--app-text)]">
                 <Trophy size={16} className="text-amber-500" /> Рейтинг водителей по поездкам
               </h2>
               <div className="space-y-2">
                 {stats.topDrivers.map((driver, idx) => (
                   <div
                     key={driver.name}
-                    className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-3 py-2"
                   >
-                    <span className="text-sm text-slate-700">
+                    <span className="text-sm text-[color:var(--app-text)]">
                       {idx + 1}. {driver.name}
                     </span>
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">

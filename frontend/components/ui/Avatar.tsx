@@ -23,7 +23,7 @@ function getInitials(alt: string): string {
 }
 
 export function Avatar({ src, alt, size = 40, className = '' }: AvatarProps) {
-  const sharedClass = `inline-flex items-center justify-center rounded-full overflow-hidden bg-gradient-to-br from-sky-100 to-indigo-100 text-slate-700 ${className}`;
+  const sharedClass = `inline-flex items-center justify-center rounded-full overflow-hidden border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] text-[color:var(--app-text)] ${className}`;
 
   if (isEmojiAvatar(src)) {
     return (

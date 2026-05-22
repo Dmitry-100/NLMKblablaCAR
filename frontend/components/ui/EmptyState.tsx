@@ -18,13 +18,10 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl border app-surface p-8 text-center shadow-sm ${className}`}
+      className={`relative overflow-hidden rounded-xl border app-surface p-8 text-center ${className}`}
     >
-      <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-sky-100/60 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-emerald-100/60 blur-2xl" />
-
-      <div className="app-surface-strong relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm">
-        <Icon size={30} className="text-sky-500" />
+      <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)]">
+        <Icon size={28} className="text-[color:var(--steel-blue)]" />
       </div>
       <h3 className="app-text relative mb-2 text-lg font-semibold">{title}</h3>
       <p className="app-text-muted relative mx-auto max-w-md text-sm">{description}</p>

@@ -51,43 +51,60 @@ export function RequestsList({ requests, user, loading, onCancelRequest }: Reque
 
   return (
     <div className="pb-32">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-emerald-100 rounded-2xl">
-          <ClipboardList className="text-emerald-600" size={28} />
+      <div className="mb-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="flex items-center gap-3">
+          <div className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-3">
+            <ClipboardList className="text-[color:var(--success)]" size={28} />
+          </div>
+          <div>
+            <p className="industrial-kicker mb-1">Пассажирский спрос</p>
+            <h1 className="industrial-page-title">Заявки</h1>
+            <p className="industrial-muted mt-1 text-sm">Пассажиры ищут попутчиков</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Заявки</h1>
-          <p className="text-gray-500 text-sm">Пассажиры ищут попутчиков</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="metric-tile px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-[color:var(--app-text-muted)]">
+              Москва
+            </p>
+            <p className="text-xl font-semibold text-[color:var(--app-text)]">{moscowToLipetsk}</p>
+          </div>
+          <div className="metric-tile px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-[color:var(--app-text-muted)]">
+              Липецк
+            </p>
+            <p className="text-xl font-semibold text-[color:var(--app-text)]">{lipetskToMoscow}</p>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="app-surface mb-6 flex gap-2 overflow-x-auto rounded-xl border p-3">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+          className={`industrial-chip px-4 py-2 whitespace-nowrap text-sm transition-colors ${
             filter === 'all'
-              ? 'bg-sky-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'industrial-chip-active'
+              : 'hover:border-[color:var(--app-border-strong)]'
           }`}
         >
           Все ({moscowToLipetsk + lipetskToMoscow})
         </button>
         <button
           onClick={() => setFilter('moscow-lipetsk')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+          className={`industrial-chip px-4 py-2 whitespace-nowrap text-sm transition-colors ${
             filter === 'moscow-lipetsk'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'industrial-chip-active'
+              : 'hover:border-[color:var(--app-border-strong)]'
           }`}
         >
           Москва → Липецк ({moscowToLipetsk})
         </button>
         <button
           onClick={() => setFilter('lipetsk-moscow')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+          className={`industrial-chip px-4 py-2 whitespace-nowrap text-sm transition-colors ${
             filter === 'lipetsk-moscow'
-              ? 'bg-pink-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'industrial-chip-active'
+              : 'hover:border-[color:var(--app-border-strong)]'
           }`}
         >
           Липецк → Москва ({lipetskToMoscow})
@@ -96,8 +113,8 @@ export function RequestsList({ requests, user, loading, onCancelRequest }: Reque
 
       {loading ? (
         <div className="space-y-4 py-2">
-          <div className="flex justify-center text-gray-400">
-            <Loader2 size={20} className="animate-spin text-sky-500" />
+          <div className="flex justify-center text-[color:var(--app-text-muted)]">
+            <Loader2 size={20} className="animate-spin text-[color:var(--steel-blue)]" />
           </div>
           {Array.from({ length: 3 }).map((_, index) => (
             <RequestSkeleton key={`request-skeleton-${index}`} />
@@ -128,14 +145,16 @@ export function RequestsList({ requests, user, loading, onCancelRequest }: Reque
       )}
 
       {filteredRequests.length > 0 && (
-        <Card className="mt-6 bg-gradient-to-r from-sky-50 to-blue-50 border-sky-200">
+        <Card className="mt-6 border-[color:var(--steel-blue)] bg-[color:var(--app-surface-soft)]">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-white rounded-xl shadow-sm">
-              <Car className="text-sky-500" size={24} />
+            <div className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-3">
+              <Car className="text-[color:var(--steel-blue)]" size={24} />
             </div>
             <div className="flex-1">
-              <h3 className="font-medium text-gray-800">Готовы взять попутчиков?</h3>
-              <p className="text-sm text-gray-600">Создайте поездку и пассажиры увидят её</p>
+              <h3 className="font-medium text-[color:var(--app-text)]">Готовы взять попутчиков?</h3>
+              <p className="text-sm text-[color:var(--app-text-muted)]">
+                Создайте поездку и пассажиры увидят её
+              </p>
             </div>
             <Link to="/create">
               <Button>Создать</Button>

@@ -74,7 +74,7 @@ export const ACIcon = ({ hasAC }: { hasAC: boolean }) => {
 
 export const PreferenceRow = ({ prefs }: { prefs: Preferences }) => {
   return (
-    <div className="flex space-x-3 items-center bg-white/50 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/40 shadow-sm">
+    <div className="flex items-center space-x-3 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-3 py-1.5">
       <MusicIcon pref={prefs.music} />
       <SmokingIcon allowed={prefs.smoking} />
       <PetsIcon allowed={prefs.pets} />

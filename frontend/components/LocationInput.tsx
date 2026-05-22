@@ -162,14 +162,14 @@ export function LocationInput({
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <label className="block text-xs text-gray-400 mb-1">
+        <label className="mb-1 block text-xs text-[color:var(--app-text-muted)]">
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
         </label>
       )}
 
       <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--app-text-muted)]">
           <MapPin size={16} />
         </div>
 
@@ -182,23 +182,22 @@ export function LocationInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={`
-            w-full bg-gray-50 pl-9 pr-20 py-3 rounded-xl text-sm
-            border border-transparent
-            focus:border-sky-300 focus:ring-2 focus:ring-sky-100
-            outline-none transition-all
-            ${showSuggestions ? 'rounded-b-none border-sky-300' : ''}
+            industrial-input w-full pl-9 pr-20 py-3 text-sm
+            ${showSuggestions ? 'rounded-b-none border-[color:var(--steel-blue)]' : ''}
           `}
         />
 
         {/* Кнопки справа */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {isLoading && <Loader2 size={16} className="animate-spin text-gray-400" />}
+          {isLoading && (
+            <Loader2 size={16} className="animate-spin text-[color:var(--app-text-muted)]" />
+          )}
 
           {inputValue && !isLoading && (
             <button
               type="button"
               onClick={handleClear}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+              className="rounded-full p-1 text-[color:var(--app-text-muted)] transition-colors hover:bg-[color:var(--app-surface-soft)] hover:text-[color:var(--app-text)]"
             >
               <X size={16} />
             </button>
@@ -208,7 +207,7 @@ export function LocationInput({
             <button
               type="button"
               onClick={onOpenMap}
-              className="p-1.5 text-sky-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
+              className="rounded-md p-1.5 text-[color:var(--steel-blue)] transition-colors hover:bg-[color:var(--app-surface-soft)]"
               title="Выбрать на карте"
             >
               <Map size={16} />
@@ -219,7 +218,7 @@ export function LocationInput({
 
       {/* Список подсказок */}
       {showSuggestions && (
-        <div className="absolute z-50 w-full bg-white border border-t-0 border-sky-300 rounded-b-xl shadow-lg overflow-hidden">
+        <div className="app-surface absolute z-50 w-full overflow-hidden rounded-b-xl border border-t-0 border-[color:var(--steel-blue)] shadow-lg">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
@@ -227,15 +226,22 @@ export function LocationInput({
               onClick={() => handleSelectSuggestion(suggestion)}
               className={`
                 w-full px-4 py-3 text-left flex items-start gap-3
-                hover:bg-sky-50 transition-colors
-                ${selectedIndex === index ? 'bg-sky-50' : ''}
+                hover:bg-[color:var(--app-surface-soft)] transition-colors
+                ${selectedIndex === index ? 'bg-[color:var(--app-surface-soft)]' : ''}
               `}
             >
-              <MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+              <MapPin
+                size={16}
+                className="mt-0.5 flex-shrink-0 text-[color:var(--app-text-muted)]"
+              />
               <div className="min-w-0">
-                <div className="text-sm text-gray-800 truncate">{suggestion.title}</div>
+                <div className="truncate text-sm text-[color:var(--app-text)]">
+                  {suggestion.title}
+                </div>
                 {suggestion.subtitle && (
-                  <div className="text-xs text-gray-400 truncate">{suggestion.subtitle}</div>
+                  <div className="truncate text-xs text-[color:var(--app-text-muted)]">
+                    {suggestion.subtitle}
+                  </div>
                 )}
               </div>
             </button>

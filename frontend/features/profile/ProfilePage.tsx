@@ -241,7 +241,7 @@ export function Profile({
 
   return (
     <div className="pb-20 animate-fade-in">
-      <Card className="flex flex-col items-center text-center mb-6 pt-10 pb-10 relative">
+      <Card className="relative mb-6 flex flex-col items-center pt-10 pb-10 text-center">
         <div className="absolute top-4 right-4">
           {isEditing ? (
             <div className="flex gap-2">
@@ -262,7 +262,7 @@ export function Profile({
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="p-2 rounded-full bg-gray-50 text-gray-400 hover:text-sky-500 hover:bg-sky-50 transition-colors"
+              className="rounded-md border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-2 text-[color:var(--app-text-muted)] transition-colors hover:text-[color:var(--steel-blue)]"
             >
               <Edit2 size={20} />
             </button>
@@ -274,19 +274,22 @@ export function Profile({
             src={isEditing ? editData.avatarUrl : user.avatarUrl}
             alt={user.name}
             size={96}
-            className="border-4 border-sky-50 shadow-lg"
+            className="border-4 border-[color:var(--app-surface-soft)] shadow-sm"
           />
           {isEditing && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 bg-sky-500 p-2 rounded-full shadow-lg hover:bg-sky-600 transition-colors"
+              className="absolute bottom-0 right-0 rounded-md bg-[color:var(--steel-blue)] p-2 shadow-lg transition-colors hover:bg-[color:var(--steel-blue-dark)]"
             >
               <Camera size={16} className="text-white" />
             </button>
           )}
           {!isEditing && (
-            <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-sm">
-              <CheckCircle size={20} className="text-blue-500 fill-blue-100" />
+            <div className="absolute bottom-0 right-0 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-1 shadow-sm">
+              <CheckCircle
+                size={20}
+                className="fill-[color:var(--app-chip)] text-[color:var(--steel-blue)]"
+              />
             </div>
           )}
           <input
@@ -304,35 +307,35 @@ export function Profile({
               type="text"
               value={editData.name}
               onChange={e => setEditData({ ...editData, name: e.target.value })}
-              className="w-full text-center text-xl font-bold text-gray-800 border-b border-sky-200 focus:outline-none bg-transparent"
+              className="w-full border-b border-[color:var(--app-border)] bg-transparent text-center text-xl font-bold text-[color:var(--app-text)] focus:outline-none"
               placeholder="Имя"
             />
-            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
-              <Briefcase size={16} className="text-gray-400" />
+            <div className="flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-2">
+              <Briefcase size={16} className="text-[color:var(--app-text-muted)]" />
               <input
                 type="text"
                 value={editData.position || ''}
                 onChange={e => setEditData({ ...editData, position: e.target.value })}
-                className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-[color:var(--app-text)] focus:outline-none"
                 placeholder="Должность"
               />
             </div>
-            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
-              <Phone size={16} className="text-gray-400" />
+            <div className="flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-2">
+              <Phone size={16} className="text-[color:var(--app-text-muted)]" />
               <input
                 type="tel"
                 value={editData.phone || ''}
                 onChange={e => setEditData({ ...editData, phone: e.target.value })}
-                className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-[color:var(--app-text)] focus:outline-none"
                 placeholder="+7 (999) 123-45-67"
               />
             </div>
-            <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-2">
-              <FileText size={16} className="text-gray-400 mt-1" />
+            <div className="flex items-start gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-2">
+              <FileText size={16} className="mt-1 text-[color:var(--app-text-muted)]" />
               <textarea
                 value={editData.bio || ''}
                 onChange={e => setEditData({ ...editData, bio: e.target.value })}
-                className="flex-1 text-sm text-gray-600 bg-transparent focus:outline-none resize-none"
+                className="flex-1 resize-none bg-transparent text-sm text-[color:var(--app-text)] focus:outline-none"
                 placeholder="О себе и интересах..."
                 rows={3}
                 maxLength={500}
@@ -341,7 +344,7 @@ export function Profile({
             <select
               value={editData.homeCity}
               onChange={e => setEditData({ ...editData, homeCity: e.target.value as City })}
-              className="w-full text-center text-gray-500 bg-white border border-gray-200 rounded-lg p-2"
+              className="industrial-input p-2 text-center"
             >
               <option value={City.Moscow}>Москва</option>
               <option value={City.Lipetsk}>Липецк</option>
@@ -349,15 +352,17 @@ export function Profile({
             <select
               value={editData.role}
               onChange={e => setEditData({ ...editData, role: e.target.value as Role })}
-              className="w-full text-center text-gray-500 bg-white border border-gray-200 rounded-lg p-2"
+              className="industrial-input p-2 text-center"
             >
               <option value={Role.Passenger}>Пассажир</option>
               <option value={Role.Driver}>Водитель</option>
               <option value={Role.Both}>Водитель и Пассажир</option>
             </select>
 
-            <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Аватар-эмодзи</p>
+            <div className="space-y-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-3">
+              <p className="text-xs uppercase tracking-wide text-[color:var(--app-text-muted)]">
+                Аватар-эмодзи
+              </p>
               <div className="grid grid-cols-8 gap-1">
                 {EMOJI_AVATARS.map(emoji => {
                   const selected = editData.avatarUrl === `emoji:${emoji}`;
@@ -368,8 +373,8 @@ export function Profile({
                       onClick={() => setEditData({ ...editData, avatarUrl: `emoji:${emoji}` })}
                       className={`rounded-lg border p-1 text-xl transition ${
                         selected
-                          ? 'border-sky-400 bg-sky-50'
-                          : 'border-transparent hover:border-slate-200'
+                          ? 'border-[color:var(--steel-blue)] bg-[color:var(--app-chip)]'
+                          : 'border-transparent hover:border-[color:var(--app-border)]'
                       }`}
                     >
                       {emoji}
@@ -377,34 +382,40 @@ export function Profile({
                   );
                 })}
               </div>
-              <p className="text-[11px] text-slate-400">Можно выбрать emoji вместо фотографии.</p>
+              <p className="text-[11px] text-[color:var(--app-text-muted)]">
+                Можно выбрать emoji вместо фотографии.
+              </p>
             </div>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
+            <h2 className="text-2xl font-semibold text-[color:var(--app-text)]">{user.name}</h2>
             {user.position && (
-              <p className="text-sm text-sky-600 flex items-center gap-1 mb-1">
+              <p className="mb-1 flex items-center gap-1 text-sm text-[color:var(--steel-blue)]">
                 <Briefcase size={14} /> {user.position}
               </p>
             )}
-            <p className="text-gray-500 mb-2">{getCityName(user.homeCity)}</p>
-            <p className="text-sm text-gray-400 flex items-center gap-1 mb-2">
+            <p className="mb-2 text-[color:var(--app-text-muted)]">{getCityName(user.homeCity)}</p>
+            <p className="mb-2 flex items-center gap-1 text-sm text-[color:var(--app-text-muted)]">
               <Mail size={14} /> {user.email}
             </p>
             {user.phone && (
-              <p className="text-sm text-gray-500 flex items-center gap-1 mb-1">
+              <p className="mb-1 flex items-center gap-1 text-sm text-[color:var(--app-text-muted)]">
                 <Phone size={14} /> {user.phone}
               </p>
             )}
-            {user.bio && <p className="text-sm text-gray-500 italic max-w-xs mb-2">"{user.bio}"</p>}
+            {user.bio && (
+              <p className="mb-2 max-w-xs text-sm italic text-[color:var(--app-text-muted)]">
+                "{user.bio}"
+              </p>
+            )}
           </>
         )}
 
         {!isEditing && (
-          <div className="flex gap-1 text-yellow-400 text-sm mb-4">
+          <div className="mb-4 flex gap-1 text-sm text-[color:var(--warning)]">
             {'★'.repeat(Math.round(user.rating))}
-            <span className="text-gray-300">({user.rating})</span>
+            <span className="text-[color:var(--app-text-muted)]">({user.rating})</span>
           </div>
         )}
 
@@ -416,9 +427,9 @@ export function Profile({
         )}
 
         <div
-          className={`w-full bg-gray-50 rounded-xl p-4 transition-all ${isEditing ? 'border-2 border-sky-200 bg-sky-50' : ''}`}
+          className={`w-full rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] p-4 transition-all ${isEditing ? 'border-[color:var(--steel-blue)]' : ''}`}
         >
-          <h3 className="text-xs uppercase text-gray-400 font-bold mb-3 tracking-wider flex items-center justify-center gap-2">
+          <h3 className="mb-3 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[color:var(--app-text-muted)]">
             {isEditing && <Edit2 size={10} />}
             Предпочтения {isEditing && '(Нажми для изменения)'}
           </h3>
@@ -429,19 +440,19 @@ export function Profile({
                 onClick={() =>
                   cycleEnum('music', Object.values(MusicPref) as readonly Preferences['music'][])
                 }
-                className="px-3 py-1 bg-white rounded-full text-xs shadow-sm border"
+                className="rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] px-3 py-1 text-xs"
               >
                 {editData.defaultPreferences.music}
               </button>
               <button
                 onClick={() => togglePreference('smoking')}
-                className={`px-3 py-1 rounded-full text-xs shadow-sm border ${editData.defaultPreferences.smoking ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                className={`rounded-full border px-3 py-1 text-xs ${editData.defaultPreferences.smoking ? 'border-[color:var(--success)] text-[color:var(--success)]' : 'border-[color:var(--danger)] text-[color:var(--danger)]'}`}
               >
                 Курение {editData.defaultPreferences.smoking ? 'Да' : 'Нет'}
               </button>
               <button
                 onClick={() => togglePreference('pets')}
-                className={`px-3 py-1 rounded-full text-xs shadow-sm border ${editData.defaultPreferences.pets ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                className={`rounded-full border px-3 py-1 text-xs ${editData.defaultPreferences.pets ? 'border-[color:var(--success)] text-[color:var(--success)]' : 'border-[color:var(--danger)] text-[color:var(--danger)]'}`}
               >
                 Животные {editData.defaultPreferences.pets ? 'Да' : 'Нет'}
               </button>
@@ -452,7 +463,7 @@ export function Profile({
                     Object.values(ConversationPref) as readonly Preferences['conversation'][]
                   )
                 }
-                className="px-3 py-1 bg-white rounded-full text-xs shadow-sm border"
+                className="rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] px-3 py-1 text-xs"
               >
                 {editData.defaultPreferences.conversation}
               </button>
@@ -467,31 +478,37 @@ export function Profile({
 
       <Card className="mb-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+          <h3 className="flex items-center gap-2 text-base font-semibold text-[color:var(--app-text)]">
             <Trophy size={18} className="text-amber-500" /> Прогресс и достижения
           </h3>
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+          <span className="rounded-sm bg-[color:var(--app-surface-soft)] px-2 py-0.5 text-xs font-medium text-[color:var(--app-text-muted)]">
             {progress.unlockedCount}/{progress.achievements.length}
           </span>
         </div>
 
         <div className="mb-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-xs uppercase text-slate-400">Уровень</p>
-            <p className="text-lg font-semibold text-slate-800">{progress.level}</p>
-            <p className="text-xs text-slate-500">{progress.points} XP</p>
+          <div className="metric-tile p-3">
+            <p className="text-xs uppercase text-[color:var(--app-text-muted)]">Уровень</p>
+            <p className="text-lg font-semibold text-[color:var(--app-text)]">{progress.level}</p>
+            <p className="text-xs text-[color:var(--app-text-muted)]">{progress.points} XP</p>
           </div>
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-xs uppercase text-slate-400">Текущая серия</p>
-            <p className="text-lg font-semibold text-slate-800">{progress.currentStreak} дн.</p>
-            <p className="text-xs text-slate-500">Лучший streak: {progress.bestStreak}</p>
+          <div className="metric-tile p-3">
+            <p className="text-xs uppercase text-[color:var(--app-text-muted)]">Текущая серия</p>
+            <p className="text-lg font-semibold text-[color:var(--app-text)]">
+              {progress.currentStreak} дн.
+            </p>
+            <p className="text-xs text-[color:var(--app-text-muted)]">
+              Лучший streak: {progress.bestStreak}
+            </p>
           </div>
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-xs uppercase text-slate-400">Следующий уровень</p>
-            <p className="text-lg font-semibold text-slate-800">
+          <div className="metric-tile p-3">
+            <p className="text-xs uppercase text-[color:var(--app-text-muted)]">
+              Следующий уровень
+            </p>
+            <p className="text-lg font-semibold text-[color:var(--app-text)]">
               {progress.nextLevelAt ? `${progress.nextLevelAt} XP` : 'Максимум'}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[color:var(--app-text-muted)]">
               {progress.nextLevelAt
                 ? `Осталось ${Math.max(0, progress.nextLevelAt - progress.points)} XP`
                 : 'Вы на высшем уровне'}
@@ -500,8 +517,10 @@ export function Profile({
         </div>
 
         <div className="mb-2 flex items-center justify-between">
-          <h4 className="text-sm font-medium text-slate-700">Каталог бейджей</h4>
-          <span className="text-xs text-slate-400">{progress.achievements.length} вариантов</span>
+          <h4 className="text-sm font-medium text-[color:var(--app-text)]">Каталог бейджей</h4>
+          <span className="text-xs text-[color:var(--app-text-muted)]">
+            {progress.achievements.length} вариантов
+          </span>
         </div>
         <div className="grid gap-2 md:grid-cols-2">
           {progress.achievements.map(item => (
@@ -509,27 +528,27 @@ export function Profile({
               key={item.id}
               className={`rounded-xl border p-3 ${
                 item.unlocked
-                  ? 'border-amber-100 bg-amber-50'
-                  : 'border-slate-200 bg-slate-50 opacity-70'
+                  ? 'border-[color:var(--warning)] bg-[color:var(--app-surface-strong)]'
+                  : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] opacity-70'
               }`}
             >
               <p
-                className={`text-sm font-medium ${item.unlocked ? 'text-amber-800' : 'text-slate-600'}`}
+                className={`text-sm font-medium ${item.unlocked ? 'text-[color:var(--app-text)]' : 'text-[color:var(--app-text-muted)]'}`}
               >
                 {item.icon} {item.title}
               </p>
-              <p className={`mt-1 text-xs ${item.unlocked ? 'text-amber-700' : 'text-slate-500'}`}>
-                {item.description}
-              </p>
+              <p className="mt-1 text-xs text-[color:var(--app-text-muted)]">{item.description}</p>
             </div>
           ))}
         </div>
       </Card>
 
-      <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2">Мои активные поездки</h3>
+      <h3 className="mb-4 ml-2 text-lg font-semibold text-[color:var(--app-text)]">
+        Мои активные поездки
+      </h3>
       <div className="space-y-4">
         {myActiveTrips.length === 0 ? (
-          <div className="bg-white/60 p-4 rounded-xl flex items-center justify-between text-gray-400 italic">
+          <div className="app-surface flex items-center justify-between rounded-xl border p-4 italic text-[color:var(--app-text-muted)]">
             <span>Нет активных поездок.</span>
           </div>
         ) : (
@@ -537,7 +556,7 @@ export function Profile({
             const isDriver = trip.driverId === user.id;
             return (
               <Link to="/" key={trip.id} className="block">
-                <Card className="hover:shadow-2xl cursor-pointer">
+                <Card className="route-card cursor-pointer">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <Badge color={trip.from === City.Moscow ? 'blue' : 'pink'}>
@@ -550,14 +569,18 @@ export function Profile({
                       )}
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-gray-800">{formatTime(trip.time)}</div>
-                      <div className="text-xs text-gray-500">{formatDate(trip.date)}</div>
+                      <div className="text-lg font-semibold text-[color:var(--app-text)]">
+                        {formatTime(trip.time)}
+                      </div>
+                      <div className="text-xs text-[color:var(--app-text-muted)]">
+                        {formatDate(trip.date)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin size={14} className="text-sky-400" />
+                  <div className="flex items-center gap-2 text-sm text-[color:var(--app-text-muted)]">
+                    <MapPin size={14} className="text-[color:var(--steel-blue)]" />
                     <span>{trip.pickupLocation}</span>
-                    <ArrowRight size={12} className="text-gray-300" />
+                    <ArrowRight size={12} />
                     <span>{trip.dropoffLocation}</span>
                   </div>
                 </Card>
@@ -569,16 +592,16 @@ export function Profile({
 
       {pendingReviews.length > 0 && (
         <>
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2 mt-8 flex items-center gap-2">
-            <Star size={18} className="text-yellow-400" />
+          <h3 className="mb-4 ml-2 mt-8 flex items-center gap-2 text-lg font-semibold text-[color:var(--app-text)]">
+            <Star size={18} className="text-[color:var(--warning)]" />
             Оцените поездки
-            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full">
+            <span className="rounded-sm bg-[color:var(--warning)] px-2 py-0.5 text-xs text-black">
               {pendingReviews.reduce((sum, pr) => sum + pr.pendingFor.length, 0)}
             </span>
           </h3>
           <div className="space-y-4">
             {pendingReviews.map(({ trip, pendingFor }) => (
-              <Card key={trip.id} className="border-l-4 border-l-yellow-400">
+              <Card key={trip.id} className="border-l-4 border-l-[color:var(--warning)]">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <Badge color={trip.from === 'Moscow' ? 'blue' : 'pink'}>
@@ -587,8 +610,12 @@ export function Profile({
                     </Badge>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium text-gray-800">{trip.time}</div>
-                    <div className="text-xs text-gray-500">{formatDate(trip.date)}</div>
+                    <div className="text-sm font-medium text-[color:var(--app-text)]">
+                      {trip.time}
+                    </div>
+                    <div className="text-xs text-[color:var(--app-text-muted)]">
+                      {formatDate(trip.date)}
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -596,11 +623,13 @@ export function Profile({
                     <button
                       key={targetUser.id}
                       onClick={() => handleOpenReviewModal(trip, targetUser)}
-                      className="flex items-center gap-2 bg-yellow-50 hover:bg-yellow-100 px-3 py-2 rounded-xl transition-colors"
+                      className="flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-3 py-2 transition-colors hover:border-[color:var(--warning)]"
                     >
                       <Avatar src={targetUser.avatarUrl} alt={targetUser.name} size={32} />
-                      <span className="text-sm text-gray-700">{targetUser.name}</span>
-                      <Star size={14} className="text-yellow-500" />
+                      <span className="text-sm text-[color:var(--app-text)]">
+                        {targetUser.name}
+                      </span>
+                      <Star size={14} className="text-[color:var(--warning)]" />
                     </button>
                   ))}
                 </div>
@@ -610,16 +639,18 @@ export function Profile({
         </>
       )}
 
-      <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2 mt-8 flex items-center gap-2">
-        <MessageSquare size={18} className="text-sky-400" />
+      <h3 className="mb-4 ml-2 mt-8 flex items-center gap-2 text-lg font-semibold text-[color:var(--app-text)]">
+        <MessageSquare size={18} className="text-[color:var(--steel-blue)]" />
         Отзывы обо мне
         {userReviews.length > 0 && (
-          <span className="text-sm text-gray-400 font-normal">({userReviews.length})</span>
+          <span className="text-sm font-normal text-[color:var(--app-text-muted)]">
+            ({userReviews.length})
+          </span>
         )}
       </h3>
       <div className="space-y-4">
         {userReviews.length === 0 ? (
-          <div className="bg-white/60 p-4 rounded-xl text-gray-400 italic text-center">
+          <div className="app-surface rounded-xl border p-4 text-center italic text-[color:var(--app-text-muted)]">
             Пока нет отзывов
           </div>
         ) : (
@@ -637,14 +668,18 @@ export function Profile({
                   <div className="flex justify-between items-start">
                     <Link
                       to={`/user/${review.author?.id}`}
-                      className="font-medium text-gray-800 hover:text-sky-600"
+                      className="font-medium text-[color:var(--app-text)] hover:text-[color:var(--steel-blue)]"
                     >
                       {review.author?.name}
                     </Link>
                     <Stars rating={review.rating} size={14} />
                   </div>
-                  {review.comment && <p className="text-sm text-gray-600 mt-1">{review.comment}</p>}
-                  <p className="text-xs text-gray-400 mt-2">
+                  {review.comment && (
+                    <p className="mt-1 text-sm text-[color:var(--app-text-muted)]">
+                      {review.comment}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-[color:var(--app-text-muted)]">
                     {new Date(review.createdAt).toLocaleDateString('ru-RU')}
                   </p>
                 </div>
@@ -656,10 +691,10 @@ export function Profile({
 
       {myRequests.length > 0 && (
         <>
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 ml-2 mt-8 flex items-center gap-2">
-            <ClipboardList size={18} className="text-emerald-500" />
+          <h3 className="mb-4 ml-2 mt-8 flex items-center gap-2 text-lg font-semibold text-[color:var(--app-text)]">
+            <ClipboardList size={18} className="text-[color:var(--success)]" />
             Мои заявки
-            <span className="text-sm text-gray-400 font-normal">
+            <span className="text-sm font-normal text-[color:var(--app-text-muted)]">
               ({myRequests.filter(r => r.status === 'pending').length} активных)
             </span>
           </h3>
@@ -676,11 +711,13 @@ export function Profile({
         </>
       )}
 
-      <div className="mt-8 text-center text-gray-500 text-xs">Версия {APP_VERSION}</div>
+      <div className="mt-8 text-center text-xs text-[color:var(--app-text-muted)]">
+        Версия {APP_VERSION}
+      </div>
 
       <button
         onClick={onLogout}
-        className="w-full mt-4 py-3 text-red-400 hover:text-red-500 text-sm"
+        className="mt-4 w-full py-3 text-sm text-[color:var(--danger)] hover:underline"
       >
         Выйти
       </button>

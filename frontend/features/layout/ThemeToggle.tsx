@@ -12,15 +12,15 @@ export function ThemeToggle() {
   const { mode, setMode } = useTheme();
 
   return (
-    <div className="app-surface inline-flex items-center gap-1 rounded-full border p-1 backdrop-blur-sm dark-surface-fallback">
+    <div className="app-surface inline-flex items-center gap-1 rounded-md border p-1 dark-surface-fallback">
       {options.map(option => (
         <button
           key={option.value}
           type="button"
           onClick={() => setMode(option.value)}
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs transition-colors ${
+          className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors ${
             mode === option.value
-              ? 'bg-sky-500 text-white'
+              ? 'bg-[color:var(--steel-blue)] text-white'
               : 'text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)] hover:text-[color:var(--app-text)]'
           }`}
           title={option.label}

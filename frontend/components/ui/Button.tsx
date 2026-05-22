@@ -23,7 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
 }) => {
   const baseStyle =
-    'px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
+    'px-5 py-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed';
   const variants: Record<ButtonVariant, string> = {
     primary: 'ui-btn-primary',
     secondary: 'ui-btn-secondary',

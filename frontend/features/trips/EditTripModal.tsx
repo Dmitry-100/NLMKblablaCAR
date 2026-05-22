@@ -31,47 +31,58 @@ export function EditTripModal({ trip, onSave, onClose }: EditTripModalProps) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+        <div className="app-surface w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl border p-6 shadow-2xl animate-fade-in">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800">Редактировать поездку</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
+              Редактировать поездку
+            </h2>
+            <button
+              onClick={onClose}
+              className="rounded-md p-2 text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface-soft)]"
+            >
               <X size={20} />
             </button>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Дата</label>
+              <label className="mb-1 block text-sm font-medium text-[color:var(--app-text)]">
+                Дата
+              </label>
               <input
                 type="date"
                 value={editData.date}
                 onChange={e => setEditData({ ...editData, date: e.target.value })}
-                className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                className="industrial-input p-3"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Время</label>
+              <label className="mb-1 block text-sm font-medium text-[color:var(--app-text)]">
+                Время
+              </label>
               <input
                 type="time"
                 value={editData.time}
                 onChange={e => setEditData({ ...editData, time: e.target.value })}
-                className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                className="industrial-input p-3"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Свободных мест</label>
+              <label className="mb-1 block text-sm font-medium text-[color:var(--app-text)]">
+                Свободных мест
+              </label>
               <select
                 value={passengerSeats}
                 onChange={e => setEditData({ ...editData, seatsTotal: Number(e.target.value) + 1 })}
-                className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none"
+                className="industrial-input p-3"
               >
                 <option value={1}>1 место</option>
                 <option value={2}>2 места</option>
                 <option value={3}>3 места</option>
               </select>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-[color:var(--app-text-muted)]">
                 Укажите число пассажирских мест (без водителя).
               </p>
             </div>
@@ -133,11 +144,13 @@ export function EditTripModal({ trip, onSave, onClose }: EditTripModalProps) {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+              <label className="mb-1 block text-sm font-medium text-[color:var(--app-text)]">
+                Комментарий
+              </label>
               <textarea
                 value={editData.comment}
                 onChange={e => setEditData({ ...editData, comment: e.target.value })}
-                className="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 focus:ring-sky-200 outline-none resize-none"
+                className="industrial-input resize-none p-3"
                 rows={3}
               />
             </div>
