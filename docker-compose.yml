@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: nlmk
       POSTGRES_PASSWORD: nlmk_local_password
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - nlmkblablacar_postgres_data:/var/lib/postgresql/data
     healthcheck:
